@@ -1,5 +1,8 @@
 # MyCollection
 
+> **Note IA**  
+> Le code de ce projet a ete genere et modifie avec l'aide de **Codex**, l'agent de developpement d'**OpenAI** base sur **GPT-5**.
+
 Application web personnelle pour consulter, rechercher et maintenir une collection de jeux video stockee dans un fichier LibreOffice Calc `.ods`.
 
 Le projet transforme un fichier ODS existant en interface web : tableau de bord, statistiques par plateforme, recherche globale de jeux, consultation par onglet plateforme et formulaire d'ajout de nouveaux jeux.
