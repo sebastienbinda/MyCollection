@@ -30,6 +30,7 @@ function App() {
   const [games, setGames] = useState([]);
   const [valuesByColumn, setValuesByColumn] = useState({});
   const [columnFilters, setColumnFilters] = useState({});
+  const [sortConfig, setSortConfig] = useState({ column: "Nom du jeu", direction: "asc" });
   const [homeSearchQuery, setHomeSearchQuery] = useState("");
   const [homeSearchResults, setHomeSearchResults] = useState([]);
   const [homeSearchError, setHomeSearchError] = useState("");
@@ -225,12 +226,60 @@ function App() {
     fetchAddGameColumnValues();
   }, [currentView, gameForm.platform]);
 
-  const columns = games.length > 0 ? Object.keys(games[0]) : [];
+  const columns =
+    games.length > 0
+      ? ["Nom du jeu", ...Object.keys(games[0]).filter((column) => column !== "Nom du jeu")]
+      : [];
   const dateFormatter = new Intl.DateTimeFormat("fr-FR");
   const isDateColumn = (column) => column.toLowerCase().includes("date");
   const isDeveloperColumn = (column) => {
     const normalized = column.toLowerCase();
     return normalized.includes("studio") || normalized.includes("develop");
+  };
+  const isSelectFilterColumn = (column) => isDeveloperColumn(column) || column === "Version";
+  const renderSortIcon = (column) => {
+    const isActive = sortConfig.column === column;
+    const direction = isActive ? sortConfig.direction : "both";
+
+    return (
+      <svg
+        className={`sortIcon sortIcon-${direction}`}
+        viewBox="0 0 16 16"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path
+          className="sortIconUp"
+          d="M8 3.2 4.6 6.6h6.8L8 3.2Z"
+        />
+        <path
+          className="sortIconDown"
+          d="M8 12.8 11.4 9.4H4.6L8 12.8Z"
+        />
+      </svg>
+    );
+  };
+  const getColumnClassName = (column) => {
+    if (column === "Nom du jeu") {
+      return "gameNameColumn";
+    }
+    if (isDateColumn(column)) {
+      return "dateColumn";
+    }
+    if (["Note", "Version"].includes(column)) {
+      return "compactColumn";
+    }
+    if (column === "Prix d'achat") {
+      return "priceColumn";
+    }
+    return "";
+  };
+  const toggleSort = (column) => {
+    setSortConfig((previous) => ({
+      column,
+      direction:
+        previous.column === column && previous.direction === "asc" ? "desc" : "asc",
+    }));
   };
 
   const formatCellValue = (column, value) => {
@@ -356,6 +405,49 @@ function App() {
       return cellValue.includes(filterValue);
     })
   );
+  const sortedGames = [...filteredGames].sort((firstGame, secondGame) => {
+    const directionMultiplier = sortConfig.direction === "asc" ? 1 : -1;
+    const firstValue = firstGame[sortConfig.column];
+    const secondValue = secondGame[sortConfig.column];
+
+    if (
+      firstValue === null ||
+      firstValue === undefined ||
+      firstValue === ""
+    ) {
+      return secondValue === null || secondValue === undefined || secondValue === ""
+        ? 0
+        : 1;
+    }
+    if (
+      secondValue === null ||
+      secondValue === undefined ||
+      secondValue === ""
+    ) {
+      return -1;
+    }
+
+    if (isDateColumn(sortConfig.column)) {
+      const firstDate = new Date(firstValue);
+      const secondDate = new Date(secondValue);
+      if (!Number.isNaN(firstDate.getTime()) && !Number.isNaN(secondDate.getTime())) {
+        return (firstDate.getTime() - secondDate.getTime()) * directionMultiplier;
+      }
+    }
+
+    const firstNumber = Number.parseFloat(String(firstValue).replace(",", "."));
+    const secondNumber = Number.parseFloat(String(secondValue).replace(",", "."));
+    if (!Number.isNaN(firstNumber) && !Number.isNaN(secondNumber)) {
+      return (firstNumber - secondNumber) * directionMultiplier;
+    }
+
+    return (
+      String(firstValue).localeCompare(String(secondValue), "fr", {
+        numeric: true,
+        sensitivity: "base",
+      }) * directionMultiplier
+    );
+  });
 
   const formatNumber = (value) => {
     if (value === null || value === undefined || value === "") {
@@ -878,13 +970,30 @@ function App() {
             <thead>
               <tr>
                 {columns.map((column) => (
-                  <th key={column}>{column}</th>
+                  <th key={column} className={getColumnClassName(column)}>
+                    <button
+                      className="sortButton"
+                      type="button"
+                      onClick={() => toggleSort(column)}
+                      aria-label={`Trier ${column} en ${
+                        sortConfig.column === column && sortConfig.direction === "asc"
+                          ? "descendant"
+                          : "ascendant"
+                      }`}
+                    >
+                      <span>{column}</span>
+                      {renderSortIcon(column)}
+                    </button>
+                  </th>
                 ))}
               </tr>
               <tr>
                 {columns.map((column) => (
-                  <th key={`${column}-filter`} className="filterCell">
-                    {isDeveloperColumn(column) ? (
+                  <th
+                    key={`${column}-filter`}
+                    className={`filterCell ${getColumnClassName(column)}`}
+                  >
+                    {isSelectFilterColumn(column) ? (
                       <select
                         value={columnFilters[column] || ""}
                         onChange={(event) =>
@@ -957,10 +1066,10 @@ function App() {
               </tr>
             </thead>
             <tbody>
-              {filteredGames.map((game, index) => (
+              {sortedGames.map((game, index) => (
                 <tr key={`${game["Nom du jeu"] || "game"}-${index}`}>
                   {columns.map((column) => (
-                    <td key={`${column}-${index}`}>
+                    <td key={`${column}-${index}`} className={getColumnClassName(column)}>
                       {column === "Version"
                         ? renderVersionValue(game[column])
                         : formatCellValue(column, game[column])}
