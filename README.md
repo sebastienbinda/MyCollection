@@ -196,6 +196,61 @@ JeuxVideo-v2.ods.backup-YYYYMMDDHHMMSS
 
 ## Lancement Local
 
+### Avec Docker Compose
+
+Le projet peut tourner avec deux conteneurs :
+
+- `backend` : API Flask exposee uniquement au reseau Docker interne
+- `web` : Nginx qui sert le frontend React compile et proxifie `/api` et `/collections` vers le backend
+
+Le fichier ODS n'est pas copie dans l'image Docker. Le dossier qui le contient est monte dans le conteneur backend sous `/data`, ce qui permet aussi de conserver les sauvegardes `.backup-*` creees lors des modifications.
+
+Copier le fichier d'exemple d'environnement :
+
+```bash
+cp docker/.env.example docker/.env
+```
+
+Adapter ensuite `docker/.env` si besoin :
+
+```bash
+WEB_PORT=8080
+JEUXVIDEO_ODS_HOST_DIR=/Users/sebastien/Documents
+JEUXVIDEO_ODS_FILENAME=JeuxVideo-v2.ods
+```
+
+Demarrer l'application :
+
+```bash
+cd docker
+docker compose up --build
+```
+
+L'application sera disponible sur :
+
+```text
+http://localhost:8080
+```
+
+Depuis un autre appareil du meme Wi-Fi, utiliser l'adresse IP locale du Mac :
+
+```text
+http://IP_DU_MAC:8080
+```
+
+Pour l'utiliser avec un nom local comme `my-collection.fr`, faire pointer ce nom vers l'IP locale du Mac dans le DNS local du reseau, puis acceder a :
+
+```text
+http://my-collection.fr:8080
+```
+
+Pour arreter :
+
+```bash
+cd docker
+docker compose down
+```
+
 ### Backend
 
 ```bash

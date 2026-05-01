@@ -1,0 +1,154 @@
+/**
+ * Page contenant le formulaire d'ajout d'un jeu dans le fichier ODS.
+ *
+ * @param {Object} props - Etat du formulaire, listes de suggestions et callbacks.
+ * @returns {import("react").JSX.Element} Vue d'ajout de jeu.
+ */
+function AddGameView({
+  platforms,
+  gameForm,
+  addGameColumnValues,
+  addGameError,
+  addGameMessage,
+  isAddingGame,
+  onBack,
+  onSubmit,
+  onFieldChange,
+}) {
+  return (
+    <main className="container">
+      <button className="backButton" type="button" onClick={onBack}>
+        Accueil
+      </button>
+      <section className="addGameHeader">
+        <p className="eyebrow">Nouveau jeu</p>
+        <h1>Ajouter un jeu</h1>
+        <p className="subtitle">
+          Le jeu sera ajoute dans l'onglet de la plateforme selectionnee, en conservant
+          le style du fichier ODS.
+        </p>
+      </section>
+
+      {addGameError ? <p className="error">{addGameError}</p> : null}
+      {addGameMessage ? <p className="success">{addGameMessage}</p> : null}
+
+      <form className="addGameForm" onSubmit={onSubmit}>
+        <label>
+          Plateforme
+          <select
+            value={gameForm.platform}
+            onChange={(event) => onFieldChange("platform", event.target.value)}
+            required
+          >
+            <option value="">Choisir une plateforme</option>
+            {platforms.map((platform) => (
+              <option key={platform} value={platform}>
+                {platform}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Nom du jeu
+          <input
+            type="text"
+            value={gameForm["Nom du jeu"]}
+            onChange={(event) => onFieldChange("Nom du jeu", event.target.value)}
+            required
+          />
+        </label>
+
+        <label>
+          Studio
+          <input
+            list="studio-options"
+            type="text"
+            value={gameForm.Studio}
+            onChange={(event) => onFieldChange("Studio", event.target.value)}
+          />
+          <datalist id="studio-options">
+            {(addGameColumnValues.Studio || []).map((studio) => (
+              <option key={studio} value={studio} />
+            ))}
+          </datalist>
+        </label>
+
+        <label>
+          Date de sortie
+          <input
+            type="date"
+            value={gameForm["Date de sortie"]}
+            onChange={(event) => onFieldChange("Date de sortie", event.target.value)}
+          />
+        </label>
+
+        <label>
+          Date d'achat
+          <input
+            type="date"
+            value={gameForm["Date d'achat"]}
+            onChange={(event) => onFieldChange("Date d'achat", event.target.value)}
+          />
+        </label>
+
+        <label>
+          Lieu d'achat
+          <input
+            type="text"
+            value={gameForm["Lieu d'achat"]}
+            onChange={(event) => onFieldChange("Lieu d'achat", event.target.value)}
+          />
+        </label>
+
+        <label>
+          Note
+          <input
+            type="text"
+            value={gameForm.Note}
+            onChange={(event) => onFieldChange("Note", event.target.value)}
+            placeholder="8/10"
+          />
+        </label>
+
+        <label>
+          Prix d'achat
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={gameForm["Prix d'achat"]}
+            onChange={(event) => onFieldChange("Prix d'achat", event.target.value)}
+          />
+        </label>
+
+        <label>
+          Version
+          <input
+            list="version-options"
+            type="text"
+            value={gameForm.Version}
+            onChange={(event) => onFieldChange("Version", event.target.value)}
+            placeholder="FR, PAL, NTSC..."
+          />
+          <datalist id="version-options">
+            {(addGameColumnValues.Version || []).map((version) => (
+              <option key={version} value={version} />
+            ))}
+          </datalist>
+        </label>
+
+        <div className="formActions">
+          <button type="button" className="secondaryButton" onClick={onBack}>
+            Annuler
+          </button>
+          <button type="submit" disabled={isAddingGame}>
+            {isAddingGame ? "Ajout en cours..." : "Ajouter le jeu"}
+          </button>
+        </div>
+      </form>
+    </main>
+  );
+}
+
+export default AddGameView;

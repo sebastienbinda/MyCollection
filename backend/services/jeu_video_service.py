@@ -27,9 +27,31 @@ for namespace_prefix, namespace_uri in NAMESPACES.items():
 
 class JeuVideoService:
     def __init__(self, ods_path: Optional[str] = None):
+        """Initialise le service d'acces au fichier ODS.
+
+        Args:
+            ods_path (Optional[str]): Chemin explicite vers le fichier ODS. Si absent,
+                le chemin est resolu depuis `JEUXVIDEO_ODS_PATH` ou les emplacements par defaut.
+
+        Returns:
+            None: Le constructeur ne retourne aucune valeur.
+        """
+
         self.ods_path = ods_path or self._resolve_ods_path()
 
     def _resolve_ods_path(self) -> str:
+        """Determine le chemin du fichier ODS a utiliser.
+
+        Args:
+            Aucun.
+
+        Returns:
+            str: Chemin absolu existant vers le fichier ODS.
+
+        Raises:
+            FileNotFoundError: Si aucun fichier ODS valide n'est trouve.
+        """
+
         env_path = os.getenv("JEUXVIDEO_ODS_PATH")
         candidate_paths = [
             env_path,
@@ -51,6 +73,16 @@ class JeuVideoService:
         return resolved_path
 
     def search(self, platform: str, query: str = "") -> list[dict]:
+        """Recherche les jeux d'une plateforme.
+
+        Args:
+            platform (str): Nom de l'onglet ODS representant la plateforme.
+            query (str): Texte optionnel filtre sur toutes les valeurs d'un jeu.
+
+        Returns:
+            list[dict]: Liste de jeux serialises pour l'API.
+        """
+
         dataframe = self._read_games_dataframe(platform)
         items = [
             JeuVideo.from_sheet_row(record)
@@ -69,6 +101,16 @@ class JeuVideoService:
         return [item.to_dict() for item in items]
 
     def search_by_game_name(self, query: str, limit: int = 50) -> list[dict]:
+        """Recherche un nom de jeu dans toutes les plateformes.
+
+        Args:
+            query (str): Texte a rechercher dans la colonne `Nom du jeu`.
+            limit (int): Nombre maximal de resultats a retourner.
+
+        Returns:
+            list[dict]: Jeux trouves, enrichis avec la cle `Plateforme`.
+        """
+
         normalized_query = query.strip().lower()
         if not normalized_query:
             return []
@@ -88,6 +130,20 @@ class JeuVideoService:
         return results
 
     def add_game(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Ajoute un jeu dans l'onglet de plateforme demande.
+
+        Args:
+            payload (dict[str, Any]): Donnees du formulaire frontend. Attend notamment
+                `platform` (str) et `Nom du jeu` (str).
+
+        Returns:
+            dict[str, Any]: Jeu ajoute, enrichi avec `Plateforme`.
+
+        Raises:
+            ValueError: Si la plateforme ou le nom du jeu est absent/invalide.
+            FileNotFoundError: Si le fichier ODS n'existe pas.
+        """
+
         platform = _clean_text(payload.get("platform"))
         game_name = _clean_text(payload.get("Nom du jeu"))
         if not platform:
@@ -113,11 +169,33 @@ class JeuVideoService:
         return {"Plateforme": platform, **game}
 
     def list_platforms(self) -> list[str]:
+        """Liste les onglets ODS correspondant a des plateformes.
+
+        Args:
+            Aucun.
+
+        Returns:
+            list[str]: Noms des onglets, hors `Accueil` et `Liste de souhaits`.
+        """
+
         excel_file = pd.ExcelFile(self.ods_path, engine="odf")
         excluded_sheets = {"Accueil", "Liste de souhaits"}
         return [sheet for sheet in excel_file.sheet_names if sheet not in excluded_sheets]
 
     def get_home_stats(self) -> dict[str, Any]:
+        """Lit les statistiques de l'onglet `Accueil`.
+
+        Args:
+            Aucun.
+
+        Returns:
+            dict[str, Any]: Titre, plateformes, totaux, premiere date et derniere date.
+
+        Raises:
+            ValueError: Si l'onglet `Accueil` est absent.
+            FileNotFoundError: Si le fichier ODS n'existe pas.
+        """
+
         dataframe = pd.read_excel(
             self.ods_path,
             sheet_name="Accueil",
@@ -181,6 +259,15 @@ class JeuVideoService:
         }
 
     def list_column_values(self, platform: str) -> dict[str, list[str]]:
+        """Retourne les valeurs distinctes de chaque colonne d'une plateforme.
+
+        Args:
+            platform (str): Nom de l'onglet ODS a lire.
+
+        Returns:
+            dict[str, list[str]]: Dictionnaire `nom_colonne -> valeurs uniques triees`.
+        """
+
         dataframe = self._read_games_dataframe(platform)
 
         values_by_column: dict[str, list[str]] = {}
@@ -197,6 +284,18 @@ class JeuVideoService:
         return values_by_column
 
     def _read_games_dataframe(self, platform: str) -> pd.DataFrame:
+        """Lit les jeux d'une plateforme dans un DataFrame.
+
+        Args:
+            platform (str): Nom de l'onglet ODS a lire.
+
+        Returns:
+            pandas.DataFrame: Lignes de jeux avec colonnes normalisees.
+
+        Raises:
+            ValueError: Si l'onglet n'existe pas.
+        """
+
         try:
             dataframe = pd.read_excel(
                 self.ods_path,
@@ -213,6 +312,15 @@ class JeuVideoService:
             return self._read_games_dataframe_from_xml(platform)
 
     def _read_games_dataframe_from_xml(self, platform: str) -> pd.DataFrame:
+        """Lit les jeux depuis le XML interne de l'ODS en secours de pandas.
+
+        Args:
+            platform (str): Nom de l'onglet ODS a parser.
+
+        Returns:
+            pandas.DataFrame: Donnees de jeux extraites des colonnes F a M.
+        """
+
         rows = self._read_sheet_rows_from_xml(platform)
         selected_rows = [row[5:13] for row in rows if len(row) >= 6]
         if len(selected_rows) <= 5:
@@ -235,6 +343,15 @@ class JeuVideoService:
         return self._normalize_games_dataframe_columns(pd.DataFrame(records, columns=columns))
 
     def _normalize_games_dataframe_columns(self, dataframe: pd.DataFrame) -> pd.DataFrame:
+        """Normalise les noms de colonnes contenant des apostrophes typographiques.
+
+        Args:
+            dataframe (pandas.DataFrame): Tableau de jeux lu depuis l'ODS.
+
+        Returns:
+            pandas.DataFrame: Tableau avec les noms de colonnes harmonises.
+        """
+
         return dataframe.rename(
             columns={
                 "Date d’achat": "Date d'achat",
@@ -244,6 +361,19 @@ class JeuVideoService:
         )
 
     def _build_content_with_added_game(self, platform: str, game: dict[str, Any]) -> bytes:
+        """Construit un nouveau `content.xml` avec une ligne de jeu ajoutee.
+
+        Args:
+            platform (str): Onglet ODS dans lequel inserer le jeu.
+            game (dict[str, Any]): Donnees du jeu deja validees et nettoyees.
+
+        Returns:
+            bytes: Contenu XML encode en UTF-8 a reinjecter dans l'archive ODS.
+
+        Raises:
+            ValueError: Si la zone de statistiques ou une ligne modele est introuvable.
+        """
+
         with ZipFile(self.ods_path) as ods_archive:
             content = ods_archive.read("content.xml")
 
@@ -292,6 +422,15 @@ class JeuVideoService:
         return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
     def _write_ods_content(self, content: bytes) -> None:
+        """Ecrit le nouveau `content.xml` dans le fichier ODS.
+
+        Args:
+            content (bytes): XML complet de `content.xml` apres modification.
+
+        Returns:
+            None: La methode modifie le fichier ODS sur disque.
+        """
+
         backup_path = f"{self.ods_path}.backup-{datetime.now().strftime('%Y%m%d%H%M%S')}"
         shutil.copy2(self.ods_path, backup_path)
         tmp_path = f"{self.ods_path}.tmp"
@@ -307,6 +446,19 @@ class JeuVideoService:
         os.replace(tmp_path, self.ods_path)
 
     def _find_sheet(self, root: ET.Element, sheet_name: str) -> ET.Element:
+        """Recherche un onglet dans l'arbre XML de l'ODS.
+
+        Args:
+            root (xml.etree.ElementTree.Element): Racine XML de `content.xml`.
+            sheet_name (str): Nom exact de l'onglet recherche.
+
+        Returns:
+            xml.etree.ElementTree.Element: Element XML de l'onglet.
+
+        Raises:
+            ValueError: Si l'onglet n'existe pas.
+        """
+
         table_name_attribute = f"{{{NAMESPACES['table']}}}name"
         sheet = next(
             (
@@ -321,6 +473,15 @@ class JeuVideoService:
         return sheet
 
     def _find_stats_row_index(self, rows: list[ET.Element]) -> Optional[int]:
+        """Trouve l'index de la ligne qui marque la zone de statistiques.
+
+        Args:
+            rows (list[xml.etree.ElementTree.Element]): Lignes XML deja expansees.
+
+        Returns:
+            Optional[int]: Index de la ligne contenant `Nombre de Jeux`, sinon `None`.
+        """
+
         for index, row in enumerate(rows):
             if "Nombre de Jeux" in self._row_text_values(row):
                 return index
@@ -329,6 +490,16 @@ class JeuVideoService:
     def _find_last_game_row_index(
         self, rows: list[ET.Element], stats_row_index: int
     ) -> Optional[int]:
+        """Trouve la derniere ligne de jeu avant les statistiques.
+
+        Args:
+            rows (list[xml.etree.ElementTree.Element]): Lignes XML deja expansees.
+            stats_row_index (int): Index de debut de la zone de statistiques.
+
+        Returns:
+            Optional[int]: Index de la derniere ligne contenant un nom de jeu, sinon `None`.
+        """
+
         last_game_row_index = None
         for index in range(6, stats_row_index):
             cells = self._expanded_cells(rows[index])
@@ -338,6 +509,16 @@ class JeuVideoService:
         return last_game_row_index
 
     def _set_game_row_values(self, row: ET.Element, game: dict[str, Any]) -> None:
+        """Remplit les cellules d'une ligne XML avec les donnees d'un jeu.
+
+        Args:
+            row (xml.etree.ElementTree.Element): Ligne XML clonee depuis une ligne modele.
+            game (dict[str, Any]): Donnees du jeu a placer dans les colonnes F a M.
+
+        Returns:
+            None: La ligne XML est modifiee en place.
+        """
+
         cells = self._expanded_cells(row)
         while len(cells) < 13:
             cells.append(ET.Element(f"{{{NAMESPACES['table']}}}table-cell"))
@@ -361,6 +542,15 @@ class JeuVideoService:
             row.append(cell)
 
     def _expanded_cells(self, row: ET.Element) -> list[ET.Element]:
+        """Developpe les cellules repetees d'une ligne ODS.
+
+        Args:
+            row (xml.etree.ElementTree.Element): Ligne XML contenant des cellules ODS.
+
+        Returns:
+            list[xml.etree.ElementTree.Element]: Cellules individuelles sans attribut de repetition.
+        """
+
         repeated_columns_attribute = f"{{{NAMESPACES['table']}}}number-columns-repeated"
         cells = []
         for cell in list(row):
@@ -374,6 +564,17 @@ class JeuVideoService:
         return cells
 
     def _set_cell_value(self, cell: ET.Element, value_type: str, value: Any) -> None:
+        """Ecrit une valeur dans une cellule XML ODS.
+
+        Args:
+            cell (xml.etree.ElementTree.Element): Cellule a modifier.
+            value_type (str): Type attendu, par exemple `string`, `date` ou `float`.
+            value (Any): Valeur brute a ecrire.
+
+        Returns:
+            None: La cellule XML est modifiee en place.
+        """
+
         office_value_type = f"{{{NAMESPACES['office']}}}value-type"
         office_value = f"{{{NAMESPACES['office']}}}value"
         office_date_value = f"{{{NAMESPACES['office']}}}date-value"
@@ -409,6 +610,15 @@ class JeuVideoService:
         paragraph.text = text_value
 
     def _row_text_values(self, row: ET.Element) -> list[str]:
+        """Extrait tous les textes non vides d'une ligne XML ODS.
+
+        Args:
+            row (xml.etree.ElementTree.Element): Ligne XML a inspecter.
+
+        Returns:
+            list[str]: Textes des cellules non vides.
+        """
+
         return [
             value
             for value in (self._cell_text_value(cell) for cell in self._expanded_cells(row))
@@ -416,6 +626,15 @@ class JeuVideoService:
         ]
 
     def _cell_text_value(self, cell: ET.Element) -> Optional[str]:
+        """Extrait le texte visible d'une cellule ODS.
+
+        Args:
+            cell (xml.etree.ElementTree.Element): Cellule XML a lire.
+
+        Returns:
+            Optional[str]: Texte concatene des paragraphes, ou `None` si vide.
+        """
+
         text_parts = []
         for paragraph in cell.findall(".//text:p", NAMESPACES):
             text_parts.append("".join(paragraph.itertext()))
@@ -423,6 +642,15 @@ class JeuVideoService:
         return text or None
 
     def _is_iso_date(self, value: str) -> bool:
+        """Indique si une chaine respecte le format date ISO `YYYY-MM-DD`.
+
+        Args:
+            value (str): Texte a valider.
+
+        Returns:
+            bool: `True` si le texte est une date ISO valide, sinon `False`.
+        """
+
         try:
             datetime.strptime(value, "%Y-%m-%d")
             return True
@@ -430,6 +658,15 @@ class JeuVideoService:
             return False
 
     def _is_number(self, value: str) -> bool:
+        """Indique si une chaine represente un nombre.
+
+        Args:
+            value (str): Texte a valider, avec virgule ou point decimal accepte.
+
+        Returns:
+            bool: `True` si le texte est convertible en float, sinon `False`.
+        """
+
         try:
             float(value.replace(",", "."))
             return True
@@ -437,6 +674,18 @@ class JeuVideoService:
             return False
 
     def get_platform_image(self, platform: str) -> tuple[bytes, str, str]:
+        """Retourne l'image embarquee dans l'onglet d'une plateforme.
+
+        Args:
+            platform (str): Nom exact ou normalise de la plateforme recherchee.
+
+        Returns:
+            tuple[bytes, str, str]: Contenu binaire, MIME type et nom de fichier de l'image.
+
+        Raises:
+            ValueError: Si aucune image n'est trouvee pour la plateforme.
+        """
+
         image_paths_by_sheet = self._list_platform_image_paths()
         image_path = image_paths_by_sheet.get(platform)
         if not image_path:
@@ -461,6 +710,15 @@ class JeuVideoService:
         return image_bytes, mime_type, filename
 
     def _list_platform_image_paths(self) -> dict[str, str]:
+        """Liste les chemins des images embarquees par onglet ODS.
+
+        Args:
+            Aucun.
+
+        Returns:
+            dict[str, str]: Dictionnaire `nom_onglet -> chemin_image_dans_archive`.
+        """
+
         namespaces = {
             "table": "urn:oasis:names:tc:opendocument:xmlns:table:1.0",
             "draw": "urn:oasis:names:tc:opendocument:xmlns:drawing:1.0",
@@ -493,6 +751,18 @@ class JeuVideoService:
         return image_paths
 
     def _read_sheet_rows_from_xml(self, sheet_name: str) -> list[list[Any]]:
+        """Lit toutes les lignes d'un onglet depuis le XML interne de l'ODS.
+
+        Args:
+            sheet_name (str): Nom exact de l'onglet a extraire.
+
+        Returns:
+            list[list[Any]]: Lignes de cellules avec repetitions ODS developpees.
+
+        Raises:
+            ValueError: Si l'onglet demande est absent.
+        """
+
         namespaces = {
             "table": "urn:oasis:names:tc:opendocument:xmlns:table:1.0",
             "text": "urn:oasis:names:tc:opendocument:xmlns:text:1.0",
@@ -548,6 +818,19 @@ class JeuVideoService:
         date_value_attribute: str,
         namespaces: dict[str, str],
     ) -> Any:
+        """Extrait une valeur Python depuis une cellule XML ODS.
+
+        Args:
+            cell (xml.etree.ElementTree.Element): Cellule XML source.
+            value_type_attribute (str): Nom qualifie de l'attribut `office:value-type`.
+            value_attribute (str): Nom qualifie de l'attribut numerique `office:value`.
+            date_value_attribute (str): Nom qualifie de l'attribut date `office:date-value`.
+            namespaces (dict[str, str]): Espaces de noms XML utilises pour trouver les paragraphes.
+
+        Returns:
+            Any: int, float, str ou `None` selon le contenu de la cellule.
+        """
+
         value_type = cell.attrib.get(value_type_attribute)
         if value_type == "float" and value_attribute in cell.attrib:
             value = float(cell.attrib[value_attribute])
@@ -562,10 +845,28 @@ class JeuVideoService:
         return text or None
 
     def _normalize_platform_name(self, value: str) -> str:
+        """Normalise un nom de plateforme pour une comparaison souple.
+
+        Args:
+            value (str): Nom de plateforme brut.
+
+        Returns:
+            str: Nom en minuscules sans espaces.
+        """
+
         return "".join(str(value).lower().split())
 
 
 def _clean_text(value: Any) -> Optional[str]:
+    """Nettoie une valeur de formulaire en texte optionnel.
+
+    Args:
+        value (Any): Valeur brute issue du payload JSON.
+
+    Returns:
+        Optional[str]: Texte sans espaces en bordure, ou `None` si vide.
+    """
+
     if value is None:
         return None
     text = str(value).strip()
@@ -573,6 +874,15 @@ def _clean_text(value: Any) -> Optional[str]:
 
 
 def _serialize_sheet_value(value: Any) -> Any:
+    """Serialise une valeur issue du tableur pour JSON.
+
+    Args:
+        value (Any): Valeur pandas, Python native, date ou cellule vide.
+
+    Returns:
+        Any: Valeur compatible JSON, avec dates ISO et `NaN` converti en `None`.
+    """
+
     if value is None:
         return None
     if isinstance(value, float) and value != value:

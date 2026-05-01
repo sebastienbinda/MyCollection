@@ -5,6 +5,19 @@ from typing import Any, Optional, Union
 
 @dataclass
 class JeuVideo:
+    """Represente une ligne de jeu video normalisee depuis le fichier ODS.
+
+    Attributes:
+        nom_du_jeu (Optional[str]): Titre du jeu.
+        studio (Optional[str]): Studio ou editeur du jeu.
+        date_de_sortie (Optional[Union[date, datetime, str]]): Date de sortie brute ou normalisee.
+        date_d_achat (Optional[Union[date, datetime, str]]): Date d'achat brute ou normalisee.
+        lieu_d_achat (Optional[str]): Magasin, site ou lieu d'achat.
+        note (Optional[str]): Note personnelle du jeu.
+        prix_d_achat (Optional[Union[float, int, str]]): Prix d'achat lu dans l'ODS.
+        version (Optional[str]): Version ou region du jeu.
+    """
+
     nom_du_jeu: Optional[str]
     studio: Optional[str]
     date_de_sortie: Optional[Union[date, datetime, str]]
@@ -16,6 +29,15 @@ class JeuVideo:
 
     @classmethod
     def from_sheet_row(cls, row: dict[str, Any]) -> "JeuVideo":
+        """Construit un objet `JeuVideo` a partir d'une ligne ODS.
+
+        Args:
+            row (dict[str, Any]): Ligne issue de pandas ou du parseur XML, indexee par nom de colonne.
+
+        Returns:
+            JeuVideo: Instance normalisee avec les variantes d'apostrophes harmonisees.
+        """
+
         return cls(
             nom_du_jeu=_clean_value(row.get("Nom du jeu")),
             studio=_clean_value(row.get("Studio")),
@@ -32,6 +54,15 @@ class JeuVideo:
         )
 
     def to_dict(self) -> dict[str, Any]:
+        """Convertit le jeu video en dictionnaire compatible JSON.
+
+        Args:
+            Aucun.
+
+        Returns:
+            dict[str, Any]: Donnees du jeu avec les noms de colonnes attendus par le frontend.
+        """
+
         return {
             "Nom du jeu": self.nom_du_jeu,
             "Studio": self.studio,
@@ -45,6 +76,15 @@ class JeuVideo:
 
 
 def _clean_value(value: Any) -> Any:
+    """Nettoie une valeur brute lue depuis le tableur.
+
+    Args:
+        value (Any): Valeur issue du fichier ODS, potentiellement `None` ou `NaN`.
+
+    Returns:
+        Any: `None` pour les valeurs vides/NaN, sinon la valeur d'origine.
+    """
+
     if value is None:
         return None
     if isinstance(value, float) and value != value:
@@ -53,6 +93,15 @@ def _clean_value(value: Any) -> Any:
 
 
 def _serialize_value(value: Any) -> Any:
+    """Serialise une valeur Python pour une reponse JSON.
+
+    Args:
+        value (Any): Valeur interne, notamment date, datetime, nombre ou texte.
+
+    Returns:
+        Any: Date convertie en chaine ISO 8601, ou valeur d'origine.
+    """
+
     if isinstance(value, (datetime, date)):
         return value.isoformat()
     return value

@@ -21,6 +21,15 @@ COLLECTION_ITEMS = {
 
 @app.get("/api/time")
 def get_time():
+    """Retourne un message de test et l'heure locale du serveur.
+
+    Args:
+        Aucun.
+
+    Returns:
+        flask.Response: Reponse JSON contenant `message` (str) et `server_time` (str).
+    """
+
     return jsonify(
         {
             "message": "Hello World depuis Python!",
@@ -31,6 +40,19 @@ def get_time():
 
 @app.get("/collections/<collection_type>/search")
 def search_collection_items(collection_type):
+    """Recherche des elements dans une collection supportee.
+
+    Args:
+        collection_type (str): Type de collection dans l'URL, par exemple `JeuxVideo` ou `Films`.
+
+    Query Args:
+        q (str): Texte optionnel de recherche.
+        platform (str): Onglet ODS a lire pour la collection `JeuxVideo`.
+
+    Returns:
+        tuple[flask.Response, int] | flask.Response: Liste JSON des elements trouves ou erreur JSON.
+    """
+
     try:
         collection_enum = CollectionTypes(collection_type)
     except ValueError:
@@ -82,6 +104,15 @@ def search_collection_items(collection_type):
 
 @app.get("/collections/JeuxVideo/platforms")
 def list_jeux_video_platforms():
+    """Liste les plateformes disponibles dans le fichier ODS.
+
+    Args:
+        Aucun.
+
+    Returns:
+        tuple[flask.Response, int] | flask.Response: Objet JSON avec `type` (str) et `platforms` (list[str]).
+    """
+
     try:
         platforms = JeuVideoService().list_platforms()
         return jsonify({"type": CollectionTypes.JeuxVideo.value, "platforms": platforms})
@@ -93,6 +124,15 @@ def list_jeux_video_platforms():
 
 @app.get("/collections/JeuxVideo/home")
 def get_jeux_video_home():
+    """Retourne les statistiques de l'onglet `Accueil` du fichier ODS.
+
+    Args:
+        Aucun.
+
+    Returns:
+        tuple[flask.Response, int] | flask.Response: Donnees JSON du tableau de bord ou erreur JSON.
+    """
+
     try:
         stats = JeuVideoService().get_home_stats()
         return jsonify({"type": CollectionTypes.JeuxVideo.value, **stats})
@@ -113,6 +153,19 @@ def get_jeux_video_home():
 
 @app.get("/collections/JeuxVideo/game-search")
 def search_jeux_video_games():
+    """Recherche un jeu par nom dans toutes les plateformes.
+
+    Args:
+        Aucun.
+
+    Query Args:
+        q (str): Texte recherche dans le nom du jeu.
+        limit (str): Nombre maximal de resultats, converti en int entre 1 et 100.
+
+    Returns:
+        tuple[flask.Response, int] | flask.Response: Objet JSON avec `items` (list[dict]) ou erreur JSON.
+    """
+
     search_query = request.args.get("q", "").strip()
     limit = request.args.get("limit", "50").strip()
     try:
@@ -141,6 +194,18 @@ def search_jeux_video_games():
 
 @app.post("/collections/JeuxVideo/games")
 def add_jeux_video_game():
+    """Ajoute un jeu dans l'onglet ODS correspondant a sa plateforme.
+
+    Args:
+        Aucun.
+
+    JSON Body:
+        dict[str, Any]: Donnees du jeu, dont `platform` (str) et `Nom du jeu` (str).
+
+    Returns:
+        tuple[flask.Response, int]: Objet JSON avec le jeu ajoute et statut 201, ou erreur JSON.
+    """
+
     payload = request.get_json(silent=True) or {}
     try:
         item = JeuVideoService().add_game(payload)
@@ -155,6 +220,15 @@ def add_jeux_video_game():
 
 @app.get("/collections/JeuxVideo/platform-image/<path:platform>")
 def get_jeux_video_platform_image(platform):
+    """Retourne l'image embarquee dans l'onglet ODS d'une plateforme.
+
+    Args:
+        platform (str): Nom de l'onglet plateforme recherche dans le fichier ODS.
+
+    Returns:
+        flask.Response | tuple[flask.Response, int]: Flux image avec son MIME type, ou erreur JSON.
+    """
+
     try:
         image_bytes, mime_type, filename = JeuVideoService().get_platform_image(platform)
         return send_file(
@@ -173,6 +247,18 @@ def get_jeux_video_platform_image(platform):
 
 @app.get("/collections/JeuxVideo/column-values")
 def list_jeux_video_column_values():
+    """Liste les valeurs distinctes de chaque colonne pour une plateforme.
+
+    Args:
+        Aucun.
+
+    Query Args:
+        platform (str): Nom de l'onglet ODS a analyser.
+
+    Returns:
+        tuple[flask.Response, int] | flask.Response: Objet JSON avec `values_by_column` ou erreur JSON.
+    """
+
     platform = request.args.get("platform", "Playstation").strip() or "Playstation"
     try:
         values = JeuVideoService().list_column_values(platform=platform)
