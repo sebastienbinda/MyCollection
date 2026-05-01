@@ -1,0 +1,6 @@
+.git
+.DS_Store
+**/__pycache__
+**/.venv
+**/node_modules
+frontend/dist
