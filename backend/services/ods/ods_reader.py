@@ -1,12 +1,14 @@
-#  __  __ __   __       ____ ___  _     _     _____ ____ _____ __   _____ ___ ___  _   _
-# |  \/  |\ \ / /      / ___/ _ \| |   | |   | ____/ ___|_   _|\ \ / /_ _/ _ \| \ | |
-# | |\/| | \ V /_____ | |  | | | | |   | |   |  _|| |     | |   \ V / | | | | |  \| |
-# | |  | |  | |_____| | |__| |_| | |___| |___| |__| |___  | |    | |  | | |_| | |\  |
-# |_|  |_|  |_|       \____\___/|_____|_____|_____\____| |_|    |_| |___\___/|_| \_|
-# Projet : MY-COLLECTYION
+#   ____ _                 _  ____      _ _           _   _             ___
+#  / ___| | ___  _   _  __| |/ ___|___ | | | ___  ___| |_(_) ___  _ __ / _ \ _ __  _ __
+# | |   | |/ _ \| | | |/ _` | |   / _ \| | |/ _ \/ __| __| |/ _ \| `_ \| | | | `_ \| `_ |
+# | |___| | (_) | |_| | (_| | |__| (_) | | |  __/ (__| |_| | (_) | | | | |_| | |_) | |_) |
+#  \____|_|\___/ \__,_|\__,_|\____\___/|_|_|\___|\___|\__|_|\___/|_| |_|\___/| .__/| .__/
+#                                                                            |_|   |_|
+# Projet : CloudCollectionApp
 # Date de creation : 2026-05-03
 # Auteurs : Codex et Binda Sébastien
 #
+import os
 from typing import Any, Optional
 
 import pandas as pd
@@ -160,7 +162,7 @@ class OdsReader:
             last_game_date = computed_totals["last_game_date"]
 
         return {
-            "title": "Collection Jeux Video",
+            "title": os.getenv("APP_HOME_TITLE", "Ma collection"),
             "platforms": platforms,
             "totals": totals,
             "first_game_date": first_game_date,

@@ -1,14 +1,15 @@
 <!--
-   __  __ __   __       ____ ___  _     _     _____ ____ _____ __   _____ ___ ___  _   _
-  |  \/  |\ \ / /      / ___/ _ \| |   | |   | ____/ ___|_   _|\ \ / /_ _/ _ \| \ | |
-  | |\/| | \ V /_____ | |  | | | | |   | |   |  _|| |     | |   \ V / | | | | |  \| |
-  | |  | |  | |_____| | |__| |_| | |___| |___| |__| |___  | |    | |  | | |_| | |\  |
-  |_|  |_|  |_|       \____\___/|_____|_____|_____\____| |_|    |_| |___\___/|_| \_|
-  Projet : MY-COLLECTYION
+    ____ _                 _  ____      _ _           _   _             ___
+   / ___| | ___  _   _  __| |/ ___|___ | | | ___  ___| |_(_) ___  _ __ / _ \ _ __  _ __
+  | |   | |/ _ \| | | |/ _` | |   / _ \| | |/ _ \/ __| __| |/ _ \| `_ \| | | | `_ \| `_ |
+  | |___| | (_) | |_| | (_| | |__| (_) | | |  __/ (__| |_| | (_) | | | | |_| | |_) | |_) |
+   \____|_|\___/ \__,_|\__,_|\____\___/|_|_|\___|\___|\__|_|\___/|_| |_|\___/| .__/| .__/
+                                                                             |_|   |_|
+  Projet : CloudCollectionApp
   Date de creation : 2026-05-03
   Auteurs : Codex et Binda Sébastien
 -->
-# MyCollection
+# CloudCollectionApp
 
 > **Note IA**  
 > Le code de ce projet a ete genere et modifie avec l'aide de **Codex**, l'agent de developpement d'**OpenAI** base sur **GPT-5**.
@@ -248,10 +249,10 @@ Depuis un autre appareil du meme Wi-Fi, utiliser l'adresse IP locale du Mac :
 http://IP_DU_MAC:8080
 ```
 
-Pour l'utiliser avec un nom local comme `my-collection.fr`, faire pointer ce nom vers l'IP locale du Mac dans le DNS local du reseau, puis acceder a :
+Pour l'utiliser avec un nom local comme `cloud-collection-app.fr`, faire pointer ce nom vers l'IP locale du Mac dans le DNS local du reseau, puis acceder a :
 
 ```text
-http://my-collection.fr:8080
+http://cloud-collection-app.fr:8080
 ```
 
 Pour arreter :

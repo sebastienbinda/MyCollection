@@ -1,10 +1,11 @@
 /*
- *  __  __ __   __       ____ ___  _     _     _____ ____ _____ __   _____ ___ ___  _   _
- * |  \/  |\ \ / /      / ___/ _ \| |   | |   | ____/ ___|_   _|\ \ / /_ _/ _ \| \ | |
- * | |\/| | \ V /_____ | |  | | | | |   | |   |  _|| |     | |   \ V / | | | | |  \| |
- * | |  | |  | |_____| | |__| |_| | |___| |___| |__| |___  | |    | |  | | |_| | |\  |
- * |_|  |_|  |_|       \____\___/|_____|_____|_____\____| |_|    |_| |___\___/|_| \_|
- * Projet : MY-COLLECTYION
+ *   ____ _                 _  ____      _ _           _   _             ___
+ *  / ___| | ___  _   _  __| |/ ___|___ | | | ___  ___| |_(_) ___  _ __ / _ \ _ __  _ __
+ * | |   | |/ _ \| | | |/ _` | |   / _ \| | |/ _ \/ __| __| |/ _ \| `_ \| | | | `_ \| `_ |
+ * | |___| | (_) | |_| | (_| | |__| (_) | | |  __/ (__| |_| | (_) | | | | |_| | |_) | |_) |
+ *  \____|_|\___/ \__,_|\__,_|\____\___/|_|_|\___|\___|\__|_|\___/|_| |_|\___/| .__/| .__/
+ *                                                                            |_|   |_|
+ * Projet : CloudCollectionApp
  * Date de creation : 2026-05-03
  * Auteurs : Codex et Binda Sébastien
  */
@@ -16,11 +17,25 @@ import {
 } from "./collectionUtils";
 import AppRouting from "./appRouting";
 import AddGameView from "./components/AddGameView";
+import AppFooter from "./components/AppFooter";
 import HomeView from "./components/HomeView";
 import PlatformDetailView from "./components/PlatformDetailView";
 import JeuxVideoApi from "./services/JeuxVideoApi";
 
 const initialGameForm = AppRouting.createInitialGameForm();
+
+/**
+ * Encapsule une vue avec le footer global.
+ *
+ * @param {{children: import("react").ReactNode}} props - Contenu de la vue courante.
+ * @returns {import("react").JSX.Element} Vue complete avec footer.
+ */
+const renderWithFooter = (children) => (
+  <>
+    {children}
+    <AppFooter />
+  </>
+);
 
 /**
  * Composant racine de l'application React.
@@ -415,7 +430,7 @@ function App() {
   };
 
   if (currentView === "home") {
-    return (
+    return renderWithFooter(
       <HomeView
         homeStats={homeStats}
         platforms={platforms}
@@ -441,7 +456,7 @@ function App() {
   }
 
   if (currentView === "addGame") {
-    return (
+    return renderWithFooter(
       <AddGameView
         platforms={platforms}
         gameForm={gameForm}
@@ -456,7 +471,7 @@ function App() {
     );
   }
 
-  return (
+  return renderWithFooter(
     <PlatformDetailView
       selectedPlatform={selectedPlatform}
       selectedPlatformStats={selectedPlatformStats}

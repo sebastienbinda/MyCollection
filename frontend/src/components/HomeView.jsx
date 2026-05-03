@@ -38,12 +38,9 @@ function HomeView({
     <main className="appShell">
       <header className="hero">
         <div>
-          <p className="eyebrow">Tableau de bord</p>
-          <h1>{homeStats?.title || "Collection Jeux Video"}</h1>
-          <p className="subtitle">
-            Une vue d'ensemble de la collection, alimentee par l'onglet Accueil du
-            fichier ODS.
-          </p>
+          <p className="eyebrow">Collection personnelle</p>
+          <h1>{homeStats?.title || "Ma collection"}</h1>
+          <p className="subtitle">Jeux, plateformes et statistiques essentielles.</p>
         </div>
         <div className="heroActions">
           <button type="button" onClick={onAddGame} disabled={platforms.length === 0}>

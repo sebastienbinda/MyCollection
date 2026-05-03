@@ -9,19 +9,23 @@
  * Date de creation : 2026-05-03
  * Auteurs : Codex et Binda Sébastien
  */
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App";
-import "./styles.css";
+import packageMetadata from "../package.json";
 
-/**
- * Monte l'application React dans le noeud HTML racine.
- *
- * @param {void} Aucun - Le noeud racine est lu directement dans le DOM.
- * @returns {void} Rend le composant `App` dans le DOM via React.
- */
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+class AppMetadata {
+  /**
+   * Retourne les informations publiques de l'application.
+   *
+   * @param {void} Aucun - Les informations sont statiques ou issues du package npm.
+   * @returns {{name: string, githubUrl: string, releaseDate: string, version: string}} Metadonnees affichees.
+   */
+  static getFooterMetadata() {
+    return {
+      name: "CloudApplicationApp",
+      githubUrl: "https://github.com/sebastienbinda/CloudCollectionApp",
+      releaseDate: "2026-05-03",
+      version: packageMetadata.version,
+    };
+  }
+}
+
+export default AppMetadata;

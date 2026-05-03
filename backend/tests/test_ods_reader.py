@@ -1,9 +1,10 @@
-#  __  __ __   __       ____ ___  _     _     _____ ____ _____ __   _____ ___ ___  _   _
-# |  \/  |\ \ / /      / ___/ _ \| |   | |   | ____/ ___|_   _|\ \ / /_ _/ _ \| \ | |
-# | |\/| | \ V /_____ | |  | | | | |   | |   |  _|| |     | |   \ V / | | | | |  \| |
-# | |  | |  | |_____| | |__| |_| | |___| |___| |__| |___  | |    | |  | | |_| | |\  |
-# |_|  |_|  |_|       \____\___/|_____|_____|_____\____| |_|    |_| |___\___/|_| \_|
-# Projet : MY-COLLECTYION
+#   ____ _                 _  ____      _ _           _   _             ___
+#  / ___| | ___  _   _  __| |/ ___|___ | | | ___  ___| |_(_) ___  _ __ / _ \ _ __  _ __
+# | |   | |/ _ \| | | |/ _` | |   / _ \| | |/ _ \/ __| __| |/ _ \| `_ \| | | | `_ \| `_ |
+# | |___| | (_) | |_| | (_| | |__| (_) | | |  __/ (__| |_| | (_) | | | | |_| | |_) | |_) |
+#  \____|_|\___/ \__,_|\__,_|\____\___/|_|_|\___|\___|\__|_|\___/|_| |_|\___/| .__/| .__/
+#                                                                            |_|   |_|
+# Projet : CloudCollectionApp
 # Date de creation : 2026-05-03
 # Auteurs : Codex et Binda Sébastien
 #
@@ -64,6 +65,7 @@ class OdsReaderFallbackTest(unittest.TestCase):
             stats = self.reader.get_home_stats()
 
         self.assertEqual(3, stats["totals"]["games_count"])
+        self.assertEqual("Ma collection", stats["title"])
         self.assertEqual(60.5, stats["totals"]["total_price"])
         self.assertEqual(20.17, stats["totals"]["average_price"])
         self.assertEqual("2019-03-01", stats["first_game_date"])
@@ -94,6 +96,23 @@ class OdsReaderFallbackTest(unittest.TestCase):
         self.assertEqual(99, switch_stats["games_count"])
         self.assertEqual(1234, switch_stats["total_price"])
         self.assertEqual(12.46, switch_stats["average_price"])
+
+    def test_home_title_can_be_configured_from_environment(self):
+        """Verifie la configuration du titre d'accueil.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident le titre configure.
+        """
+
+        self.reader.cache.reset()
+        with patch("services.ods.ods_reader.pd.read_excel", return_value=self._home_dataframe()):
+            with patch.dict("services.ods.ods_reader.os.environ", {"APP_HOME_TITLE": "Mes RPG"}):
+                stats = self.reader.get_home_stats()
+
+        self.assertEqual("Mes RPG", stats["title"])
 
     def _home_dataframe(self):
         """Construit un DataFrame Accueil avec erreurs de formules.
