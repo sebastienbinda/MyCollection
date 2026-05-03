@@ -160,6 +160,32 @@ def get_jeux_video_home():
         return jsonify({"error": f"Unable to read ODS file: {exc}"}), 500
 
 
+@app.post("/collections/JeuxVideo/cache/reset")
+def reset_jeux_video_cache():
+    """Vide le cache backend des donnees lues depuis le fichier ODS.
+
+    Args:
+        Aucun.
+
+    Returns:
+        tuple[flask.Response, int] | flask.Response: Statut JSON avec le nombre d'entrees supprimees.
+    """
+
+    try:
+        removed_entries = JeuVideoService().reset_cache()
+        return jsonify(
+            {
+                "type": CollectionTypes.JeuxVideo.value,
+                "message": "Cache ODS reinitialise.",
+                "removed_entries": removed_entries,
+            }
+        )
+    except FileNotFoundError as exc:
+        return jsonify({"error": str(exc)}), 500
+    except Exception as exc:
+        return jsonify({"error": f"Unable to reset ODS cache: {exc}"}), 500
+
+
 @app.get("/collections/JeuxVideo/game-search")
 def search_jeux_video_games():
     """Recherche un jeu par nom dans toutes les plateformes.

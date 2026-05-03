@@ -7,8 +7,8 @@
 # Date de creation : 2026-05-03
 # Auteurs : Codex et Binda Sébastien
 #
-"""Exports publics des services backend."""
+"""Exports publics des helpers de formatage."""
 
-from .jeux_video import JeuVideoService
+from .sheet_value_formatter import SheetValueFormatter
 
-__all__ = ["JeuVideoService"]
+__all__ = ["SheetValueFormatter"]

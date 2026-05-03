@@ -17,11 +17,15 @@ function HomeView({
   homeSearchQuery,
   homeSearchResults,
   homeSearchError,
+  cacheResetMessage,
+  cacheResetError,
+  isResettingCache,
   onAddGame,
   onOpenPlatform,
   onSearchQueryChange,
   onSearchSubmit,
   onCloseSearch,
+  onResetCache,
 }) {
   const topPlatform = homeStats?.platforms?.reduce((top, platform) => {
     if (!top || (platform.games_count || 0) > (top.games_count || 0)) {
@@ -48,6 +52,14 @@ function HomeView({
           <button
             className="secondaryButton"
             type="button"
+            onClick={onResetCache}
+            disabled={isResettingCache}
+          >
+            {isResettingCache ? "Reset..." : "Reset cache"}
+          </button>
+          <button
+            className="secondaryButton"
+            type="button"
             onClick={() => onOpenPlatform(selectedPlatform || platforms[0] || "")}
             disabled={platforms.length === 0}
           >
@@ -57,6 +69,8 @@ function HomeView({
       </header>
 
       {error ? <p className="error">{error}</p> : null}
+      {cacheResetError ? <p className="error">{cacheResetError}</p> : null}
+      {cacheResetMessage ? <p className="success">{cacheResetMessage}</p> : null}
       {isLoadingHome ? <p>Chargement des statistiques...</p> : null}
 
       {!isLoadingHome && homeStats ? (

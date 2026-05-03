@@ -7,8 +7,8 @@
 # Date de creation : 2026-05-03
 # Auteurs : Codex et Binda Sébastien
 #
-"""Exports publics des services backend."""
+"""Exports publics des services metier JeuxVideo."""
 
-from .jeux_video import JeuVideoService
+from .jeu_video_service import JeuVideoService
 
 __all__ = ["JeuVideoService"]

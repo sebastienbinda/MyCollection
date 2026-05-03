@@ -235,7 +235,11 @@ export const formatNumber = (value) => {
   if (value === null || value === undefined || value === "") {
     return "-";
   }
-  return new Intl.NumberFormat("fr-FR").format(value);
+  const numericValue = Number.parseFloat(String(value).replace(",", "."));
+  if (Number.isNaN(numericValue)) {
+    return "-";
+  }
+  return new Intl.NumberFormat("fr-FR").format(numericValue);
 };
 
 /**
@@ -248,11 +252,15 @@ export const formatCurrency = (value) => {
   if (value === null || value === undefined || value === "") {
     return "-";
   }
+  const numericValue = Number.parseFloat(String(value).replace(",", "."));
+  if (Number.isNaN(numericValue)) {
+    return "-";
+  }
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",
     currency: "EUR",
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(numericValue);
 };
 
 /**

@@ -14,45 +14,13 @@ import {
   getStudioCount,
   sortGames,
 } from "./collectionUtils";
+import AppRouting from "./appRouting";
 import AddGameView from "./components/AddGameView";
 import HomeView from "./components/HomeView";
 import PlatformDetailView from "./components/PlatformDetailView";
+import JeuxVideoApi from "./services/JeuxVideoApi";
 
-const initialGameForm = {
-  platform: "",
-  "Nom du jeu": "",
-  Studio: "",
-  "Date de sortie": "",
-  "Date d'achat": "",
-  "Lieu d'achat": "",
-  Note: "",
-  "Prix d'achat": "",
-  Version: "",
-};
-
-/**
- * Lit la plateforme presente dans l'URL courante.
- *
- * @param {void} Aucun - Utilise `window.location.search`.
- * @returns {string} Nom de plateforme issu du parametre `platform`, ou chaine vide.
- */
-const getPlatformFromUrl = () => {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("platform") || "";
-};
-
-/**
- * Deduit la vue active depuis le chemin et les parametres d'URL.
- *
- * @param {void} Aucun - Utilise `window.location`.
- * @returns {"home"|"games"|"addGame"} Identifiant de vue a afficher.
- */
-const getViewFromUrl = () => {
-  if (window.location.pathname === "/add-game") {
-    return "addGame";
-  }
-  return getPlatformFromUrl() ? "games" : "home";
-};
+const initialGameForm = AppRouting.createInitialGameForm();
 
 /**
  * Composant racine de l'application React.
@@ -61,10 +29,10 @@ const getViewFromUrl = () => {
  * @returns {import("react").JSX.Element} Interface complete de l'application.
  */
 function App() {
-  const [currentView, setCurrentView] = useState(getViewFromUrl);
+  const [currentView, setCurrentView] = useState(AppRouting.getViewFromUrl);
   const [homeStats, setHomeStats] = useState(null);
   const [platforms, setPlatforms] = useState([]);
-  const [selectedPlatform, setSelectedPlatform] = useState(getPlatformFromUrl);
+  const [selectedPlatform, setSelectedPlatform] = useState(AppRouting.getPlatformFromUrl);
   const [games, setGames] = useState([]);
   const [valuesByColumn, setValuesByColumn] = useState({});
   const [columnFilters, setColumnFilters] = useState({});
@@ -77,11 +45,15 @@ function App() {
   const [addGameMessage, setAddGameMessage] = useState("");
   const [addGameError, setAddGameError] = useState("");
   const [addGameColumnValues, setAddGameColumnValues] = useState({});
+  const [cacheResetMessage, setCacheResetMessage] = useState("");
+  const [cacheResetError, setCacheResetError] = useState("");
   const [isLoadingHome, setIsLoadingHome] = useState(true);
   const [isLoadingPlatforms, setIsLoadingPlatforms] = useState(true);
   const [isLoadingGames, setIsLoadingGames] = useState(false);
   const [isSearchingGames, setIsSearchingGames] = useState(false);
   const [isAddingGame, setIsAddingGame] = useState(false);
+  const [isResettingCache, setIsResettingCache] = useState(false);
+  const [odsReloadKey, setOdsReloadKey] = useState(0);
   const [gamesReloadKey, setGamesReloadKey] = useState(0);
   const [error, setError] = useState("");
 
@@ -202,12 +174,9 @@ function App() {
      */
     const fetchHomeStats = async () => {
       try {
+        setIsLoadingHome(true);
         setError("");
-        const response = await fetch("/collections/JeuxVideo/home");
-        if (!response.ok) {
-          throw new Error("Impossible de recuperer l'accueil.");
-        }
-        const data = await response.json();
+        const data = await JeuxVideoApi.fetchHomeStats();
         setHomeStats(data);
       } catch (e) {
         setError("Impossible de charger les statistiques de l'accueil.");
@@ -217,7 +186,7 @@ function App() {
     };
 
     fetchHomeStats();
-  }, []);
+  }, [odsReloadKey]);
 
   useEffect(() => {
     /**
@@ -228,18 +197,15 @@ function App() {
      */
     const fetchPlatforms = async () => {
       try {
+        setIsLoadingPlatforms(true);
         setError("");
-        const response = await fetch("/collections/JeuxVideo/platforms");
-        if (!response.ok) {
-          throw new Error("Impossible de recuperer les plateformes.");
-        }
-        const data = await response.json();
+        const data = await JeuxVideoApi.fetchPlatforms();
         const loadedPlatforms = (data.platforms || []).filter(
           (platform) => !["Accueil", "Liste de souhaits"].includes(platform)
         );
         setPlatforms(loadedPlatforms);
 
-        const platformFromUrl = getPlatformFromUrl();
+        const platformFromUrl = AppRouting.getPlatformFromUrl();
         if (platformFromUrl) {
           setSelectedPlatform(platformFromUrl);
           setCurrentView("games");
@@ -258,7 +224,7 @@ function App() {
     };
 
     fetchPlatforms();
-  }, []);
+  }, [odsReloadKey]);
 
   useEffect(() => {
     /**
@@ -273,7 +239,7 @@ function App() {
         return;
       }
 
-      const platformFromUrl = getPlatformFromUrl();
+      const platformFromUrl = AppRouting.getPlatformFromUrl();
       if (platformFromUrl) {
         setSelectedPlatform(platformFromUrl);
         setCurrentView("games");
@@ -302,13 +268,7 @@ function App() {
       try {
         setIsLoadingGames(true);
         setError("");
-        const response = await fetch(
-          `/collections/JeuxVideo/search?platform=${encodeURIComponent(selectedPlatform)}`
-        );
-        if (!response.ok) {
-          throw new Error("Impossible de recuperer les jeux video.");
-        }
-        const data = await response.json();
+        const data = await JeuxVideoApi.fetchGames(selectedPlatform);
         setGames(Array.isArray(data) ? data : []);
         setColumnFilters({});
       } catch (e) {
@@ -336,13 +296,7 @@ function App() {
       }
 
       try {
-        const response = await fetch(
-          `/collections/JeuxVideo/column-values?platform=${encodeURIComponent(selectedPlatform)}`
-        );
-        if (!response.ok) {
-          throw new Error("Impossible de recuperer les valeurs de colonnes.");
-        }
-        const data = await response.json();
+        const data = await JeuxVideoApi.fetchColumnValues(selectedPlatform);
         setValuesByColumn(data.values_by_column || {});
       } catch (e) {
         setValuesByColumn({});
@@ -350,7 +304,7 @@ function App() {
     };
 
     fetchColumnValues();
-  }, [selectedPlatform]);
+  }, [selectedPlatform, gamesReloadKey]);
 
   useEffect(() => {
     /**
@@ -366,13 +320,7 @@ function App() {
       }
 
       try {
-        const response = await fetch(
-          `/collections/JeuxVideo/column-values?platform=${encodeURIComponent(gameForm.platform)}`
-        );
-        if (!response.ok) {
-          throw new Error("Impossible de recuperer les valeurs existantes.");
-        }
-        const data = await response.json();
+        const data = await JeuxVideoApi.fetchColumnValues(gameForm.platform);
         setAddGameColumnValues(data.values_by_column || {});
       } catch (e) {
         setAddGameColumnValues({});
@@ -380,7 +328,7 @@ function App() {
     };
 
     fetchAddGameColumnValues();
-  }, [currentView, gameForm.platform]);
+  }, [currentView, gameForm.platform, odsReloadKey]);
 
   /**
    * Soumet un nouveau jeu au backend.
@@ -395,29 +343,44 @@ function App() {
 
     try {
       setIsAddingGame(true);
-      const response = await fetch("/collections/JeuxVideo/games", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(gameForm),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Impossible d'ajouter le jeu.");
-      }
+      const data = await JeuxVideoApi.addGame(gameForm);
 
       setAddGameMessage("Jeu ajoute avec succes.");
       setGameForm({
         ...initialGameForm,
         platform: gameForm.platform,
       });
+      setOdsReloadKey((previous) => previous + 1);
       setGamesReloadKey((previous) => previous + 1);
       openPlatform(data.item.Plateforme);
     } catch (e) {
       setAddGameError(e.message || "Impossible d'ajouter le jeu.");
     } finally {
       setIsAddingGame(false);
+    }
+  };
+
+  /**
+   * Reinitialise le cache ODS backend puis recharge les donnees de l'interface.
+   *
+   * @param {void} Aucun - Appelle l'endpoint de reset du cache.
+   * @returns {Promise<void>} Met a jour les messages, les compteurs de rechargement et les erreurs.
+   */
+  const resetOdsCache = async () => {
+    setCacheResetMessage("");
+    setCacheResetError("");
+
+    try {
+      setIsResettingCache(true);
+      await JeuxVideoApi.resetCache();
+
+      setCacheResetMessage("Cache reinitialise. Donnees rechargees.");
+      setOdsReloadKey((previous) => previous + 1);
+      setGamesReloadKey((previous) => previous + 1);
+    } catch (e) {
+      setCacheResetError(e.message || "Impossible de reinitialiser le cache.");
+    } finally {
+      setIsResettingCache(false);
     }
   };
 
@@ -441,13 +404,7 @@ function App() {
     try {
       setIsSearchingGames(true);
       setHomeSearchError("");
-      const response = await fetch(
-        `/collections/JeuxVideo/game-search?q=${encodeURIComponent(query)}`
-      );
-      if (!response.ok) {
-        throw new Error("Impossible de rechercher les jeux.");
-      }
-      const data = await response.json();
+      const data = await JeuxVideoApi.searchGamesByName(query);
       setHomeSearchResults(Array.isArray(data.items) ? data.items : []);
     } catch (e) {
       setHomeSearchError("Impossible de rechercher dans la collection.");
@@ -470,11 +427,15 @@ function App() {
         homeSearchQuery={homeSearchQuery}
         homeSearchResults={homeSearchResults}
         homeSearchError={homeSearchError}
+        cacheResetMessage={cacheResetMessage}
+        cacheResetError={cacheResetError}
+        isResettingCache={isResettingCache}
         onAddGame={openAddGamePage}
         onOpenPlatform={openPlatform}
         onSearchQueryChange={setHomeSearchQuery}
         onSearchSubmit={searchGamesByName}
         onCloseSearch={closeHomeSearch}
+        onResetCache={resetOdsCache}
       />
     );
   }
