@@ -33,6 +33,27 @@ function HomeView({
     }
     return top;
   }, null);
+  const maxGamesCount = Math.max(
+    0,
+    ...(homeStats?.platforms || []).map((platform) => Number(platform.games_count) || 0)
+  );
+
+  /**
+   * Retourne le niveau visuel associe au nombre de jeux d'une plateforme.
+   *
+   * @param {number|string|null|undefined} gamesCount - Nombre de jeux de la plateforme.
+   * @returns {"low"|"medium"|"high"} Niveau de densite de collection.
+   */
+  const getPlatformCountLevel = (gamesCount) => {
+    const count = Number(gamesCount) || 0;
+    if (!maxGamesCount || count >= maxGamesCount * 0.66) {
+      return "high";
+    }
+    if (count >= maxGamesCount * 0.33) {
+      return "medium";
+    }
+    return "low";
+  };
 
   return (
     <main className="appShell">
@@ -193,7 +214,11 @@ function HomeView({
             <div className="platformGrid">
               {(homeStats.platforms || []).map((platform) => (
                 <article
-                  className={`platformCard${platform.has_image ? " platformCardWithImage" : ""}`}
+                  className={[
+                    "platformCard",
+                    platform.has_image ? "platformCardWithImage" : "",
+                    `platformCardCount${getPlatformCountLevel(platform.games_count)}`,
+                  ].join(" ")}
                   key={platform.name}
                   style={
                     platform.image_url
@@ -201,9 +226,11 @@ function HomeView({
                       : undefined
                   }
                 >
-                  <div>
+                  <div className="platformCardHeader">
                     <h3>{platform.name}</h3>
-                    <p>{formatNumber(platform.games_count)} jeux</p>
+                    <p className="platformGameCount">
+                      {formatNumber(platform.games_count)} jeux
+                    </p>
                   </div>
                   <dl>
                     <div>

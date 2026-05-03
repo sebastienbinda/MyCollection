@@ -527,15 +527,68 @@ td.gameNameColumn {
   margin-bottom: 0.25rem;
 }
 
+.platformCardHeader {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.platformCardHeader h3 {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
 .platformCard p {
   color: #475569;
   margin-bottom: 0;
+}
+
+.platformGameCount {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.86rem;
+  font-weight: 700;
+  margin: 0;
+  padding: 0.3rem 0.58rem;
+  text-transform: uppercase;
+}
+
+.platformCard h3 {
+  padding-right: 0;
+}
+
+.platformCardCountlow .platformGameCount {
+  background: rgba(99, 102, 241, 0.55);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #ffffff;
+}
+
+.platformCardCountmedium .platformGameCount {
+  background: rgba(180, 83, 9, 0.58);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #ffffff;
+}
+
+.platformCardCounthigh .platformGameCount {
+  background: rgba(21, 128, 61, 0.58);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #ffffff;
 }
 
 .platformCardWithImage p,
 .platformCardWithImage dt {
   color: #f8fafc;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+.platformCardWithImage .platformGameCount {
+  backdrop-filter: blur(4px);
+  box-shadow: none;
+  text-shadow: none;
 }
 
 .platformCardWithImage dl {
