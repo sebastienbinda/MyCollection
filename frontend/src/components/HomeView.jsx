@@ -21,6 +21,7 @@ function HomeView({
   cacheResetError,
   isResettingCache,
   onAddGame,
+  onOpenWishlist,
   onOpenPlatform,
   onSearchQueryChange,
   onSearchSubmit,
@@ -66,6 +67,9 @@ function HomeView({
         <div className="heroActions">
           <button type="button" onClick={onAddGame} disabled={platforms.length === 0}>
             Ajouter un jeu
+          </button>
+          <button className="secondaryButton" type="button" onClick={onOpenWishlist}>
+            Liste de souhaits
           </button>
           <button
             className="secondaryButton"

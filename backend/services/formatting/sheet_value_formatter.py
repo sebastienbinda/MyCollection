@@ -44,6 +44,8 @@ class SheetValueFormatter:
             return None
         if isinstance(value, float) and value != value:
             return None
+        if str(value) == "NaT":
+            return None
         if isinstance(value, str) and value.strip().lower().startswith("err:"):
             return None
         if isinstance(value, (datetime, date)):

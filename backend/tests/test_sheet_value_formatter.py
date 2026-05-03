@@ -45,6 +45,7 @@ class SheetValueFormatterTest(unittest.TestCase):
             SheetValueFormatter.serialize(datetime(2026, 5, 3, 10, 15)),
         )
         self.assertIsNone(SheetValueFormatter.serialize(float("nan")))
+        self.assertIsNone(SheetValueFormatter.serialize("NaT"))
         self.assertIsNone(SheetValueFormatter.serialize("Err:510"))
         self.assertEqual("Switch", SheetValueFormatter.serialize("Switch"))
 

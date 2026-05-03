@@ -10,6 +10,8 @@
  * Auteurs : Codex et Binda Sébastien
  */
 class AppRouting {
+  static wishlistSheetName = "Liste de souhaits";
+
   /**
    * Cree l'etat initial du formulaire d'ajout de jeu.
    *
@@ -50,6 +52,9 @@ class AppRouting {
   static getViewFromUrl() {
     if (window.location.pathname === "/add-game") {
       return "addGame";
+    }
+    if (window.location.pathname === "/wishlist") {
+      return "wishlist";
     }
     return AppRouting.getPlatformFromUrl() ? "games" : "home";
   }

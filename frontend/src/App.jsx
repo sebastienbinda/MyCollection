@@ -17,25 +17,12 @@ import {
 } from "./collectionUtils";
 import AppRouting from "./appRouting";
 import AddGameView from "./components/AddGameView";
-import AppFooter from "./components/AppFooter";
+import AppFrame from "./components/AppFrame";
 import HomeView from "./components/HomeView";
 import PlatformDetailView from "./components/PlatformDetailView";
 import JeuxVideoApi from "./services/JeuxVideoApi";
 
 const initialGameForm = AppRouting.createInitialGameForm();
-
-/**
- * Encapsule une vue avec le footer global.
- *
- * @param {{children: import("react").ReactNode}} props - Contenu de la vue courante.
- * @returns {import("react").JSX.Element} Vue complete avec footer.
- */
-const renderWithFooter = (children) => (
-  <>
-    {children}
-    <AppFooter />
-  </>
-);
 
 /**
  * Composant racine de l'application React.
@@ -47,7 +34,11 @@ function App() {
   const [currentView, setCurrentView] = useState(AppRouting.getViewFromUrl);
   const [homeStats, setHomeStats] = useState(null);
   const [platforms, setPlatforms] = useState([]);
-  const [selectedPlatform, setSelectedPlatform] = useState(AppRouting.getPlatformFromUrl);
+  const [selectedPlatform, setSelectedPlatform] = useState(() =>
+    AppRouting.getViewFromUrl() === "wishlist"
+      ? AppRouting.wishlistSheetName
+      : AppRouting.getPlatformFromUrl()
+  );
   const [games, setGames] = useState([]);
   const [valuesByColumn, setValuesByColumn] = useState({});
   const [columnFilters, setColumnFilters] = useState({});
@@ -140,6 +131,18 @@ function App() {
   };
 
   /**
+   * Ouvre la vue dediee a l'onglet `Liste de souhaits`.
+   *
+   * @param {void} Aucun - Utilise le nom d'onglet configure dans `AppRouting`.
+   * @returns {void} Met a jour l'etat React et l'URL.
+   */
+  const openWishlist = () => {
+    setSelectedPlatform(AppRouting.wishlistSheetName);
+    setCurrentView("wishlist");
+    window.history.pushState({}, "", "/wishlist");
+  };
+
+  /**
    * Met a jour un champ du formulaire d'ajout de jeu.
    *
    * @param {string} field - Nom du champ du formulaire.
@@ -181,12 +184,6 @@ function App() {
   };
 
   useEffect(() => {
-    /**
-     * Charge les statistiques d'accueil depuis l'API backend.
-     *
-     * @param {void} Aucun - Appelle `/collections/JeuxVideo/home`.
-     * @returns {Promise<void>} Met a jour `homeStats`, `error` et `isLoadingHome`.
-     */
     const fetchHomeStats = async () => {
       try {
         setIsLoadingHome(true);
@@ -204,12 +201,6 @@ function App() {
   }, [odsReloadKey]);
 
   useEffect(() => {
-    /**
-     * Charge la liste des plateformes exposees par le backend.
-     *
-     * @param {void} Aucun - Appelle `/collections/JeuxVideo/platforms`.
-     * @returns {Promise<void>} Met a jour `platforms`, `selectedPlatform` et l'etat de chargement.
-     */
     const fetchPlatforms = async () => {
       try {
         setIsLoadingPlatforms(true);
@@ -221,7 +212,9 @@ function App() {
         setPlatforms(loadedPlatforms);
 
         const platformFromUrl = AppRouting.getPlatformFromUrl();
-        if (platformFromUrl) {
+        if (currentView === "wishlist") {
+          setSelectedPlatform(AppRouting.wishlistSheetName);
+        } else if (platformFromUrl) {
           setSelectedPlatform(platformFromUrl);
           setCurrentView("games");
         } else if (loadedPlatforms.length > 0) {
@@ -239,18 +232,17 @@ function App() {
     };
 
     fetchPlatforms();
-  }, [odsReloadKey]);
+  }, [currentView, odsReloadKey]);
 
   useEffect(() => {
-    /**
-     * Reagit aux boutons precedent/suivant du navigateur.
-     *
-     * @param {void} Aucun - Utilise uniquement `window.location`.
-     * @returns {void} Synchronise la vue React avec l'URL courante.
-     */
     const handlePopState = () => {
       if (window.location.pathname === "/add-game") {
         setCurrentView("addGame");
+        return;
+      }
+      if (window.location.pathname === "/wishlist") {
+        setSelectedPlatform(AppRouting.wishlistSheetName);
+        setCurrentView("wishlist");
         return;
       }
 
@@ -268,12 +260,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    /**
-     * Charge les jeux de la plateforme selectionnee.
-     *
-     * @param {void} Aucun - Utilise `selectedPlatform`.
-     * @returns {Promise<void>} Met a jour `games`, les filtres et l'etat de chargement.
-     */
     const fetchGames = async () => {
       if (!selectedPlatform) {
         setGames([]);
@@ -298,12 +284,6 @@ function App() {
   }, [selectedPlatform, gamesReloadKey]);
 
   useEffect(() => {
-    /**
-     * Charge les valeurs distinctes de colonnes pour les filtres de tableau.
-     *
-     * @param {void} Aucun - Utilise `selectedPlatform`.
-     * @returns {Promise<void>} Met a jour `valuesByColumn`.
-     */
     const fetchColumnValues = async () => {
       if (!selectedPlatform) {
         setValuesByColumn({});
@@ -430,7 +410,8 @@ function App() {
   };
 
   if (currentView === "home") {
-    return renderWithFooter(
+    return (
+      <AppFrame>
       <HomeView
         homeStats={homeStats}
         platforms={platforms}
@@ -446,17 +427,20 @@ function App() {
         cacheResetError={cacheResetError}
         isResettingCache={isResettingCache}
         onAddGame={openAddGamePage}
+        onOpenWishlist={openWishlist}
         onOpenPlatform={openPlatform}
         onSearchQueryChange={setHomeSearchQuery}
         onSearchSubmit={searchGamesByName}
         onCloseSearch={closeHomeSearch}
         onResetCache={resetOdsCache}
       />
+      </AppFrame>
     );
   }
 
   if (currentView === "addGame") {
-    return renderWithFooter(
+    return (
+      <AppFrame>
       <AddGameView
         platforms={platforms}
         gameForm={gameForm}
@@ -468,10 +452,12 @@ function App() {
         onSubmit={submitNewGame}
         onFieldChange={updateGameFormValue}
       />
+      </AppFrame>
     );
   }
 
-  return renderWithFooter(
+  return (
+    <AppFrame>
     <PlatformDetailView
       selectedPlatform={selectedPlatform}
       selectedPlatformStats={selectedPlatformStats}
@@ -487,11 +473,13 @@ function App() {
       error={error}
       isLoadingPlatforms={isLoadingPlatforms}
       isLoadingGames={isLoadingGames}
+      isWishlist={currentView === "wishlist"}
       onBack={goHome}
       onOpenPlatform={openPlatform}
       onToggleSort={toggleSort}
       onColumnFiltersChange={setColumnFilters}
     />
+    </AppFrame>
   );
 }
 

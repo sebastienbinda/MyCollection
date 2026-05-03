@@ -37,6 +37,9 @@ class FakeReader:
             "Playstation": pd.DataFrame(
                 [{"Nom du jeu": "Gran Turismo", "Studio": "Polyphony"}]
             ),
+            "Liste de souhaits": pd.DataFrame(
+                [{"Nom du jeu": "Chrono Trigger", "Console": "Switch 2", "Prix": 60}]
+            ),
         }
 
     def read_games_dataframe(self, platform):
@@ -148,6 +151,22 @@ class JeuVideoServiceTest(unittest.TestCase):
 
         self.assertEqual(1, len(results))
         self.assertEqual("Zelda", results[0]["Nom du jeu"])
+
+    def test_search_wishlist_keeps_raw_columns(self):
+        """Verifie que la liste de souhaits conserve ses colonnes specifiques.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident le comportement attendu.
+        """
+
+        results = self.service.search("Liste de souhaits")
+
+        self.assertEqual(1, len(results))
+        self.assertEqual("Switch 2", results[0]["Console"])
+        self.assertEqual(60, results[0]["Prix"])
 
     def test_search_by_game_name_scans_all_platforms(self):
         """Verifie la recherche globale par nom de jeu.

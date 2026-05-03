@@ -79,6 +79,7 @@ function PlatformDetailView({
   error,
   isLoadingPlatforms,
   isLoadingGames,
+  isWishlist,
   onBack,
   onOpenPlatform,
   onToggleSort,
@@ -100,14 +101,26 @@ function PlatformDetailView({
         }
       >
         <div className="platformDetailContent">
-          <p className="eyebrow">Plateforme</p>
-          <h1>{selectedPlatformStats?.name || selectedPlatform || "CloudCollectionApp"}</h1>
-          <p className="subtitle">Filtrer la liste par plateforme (onglet ODS)</p>
+          <p className="eyebrow">{isWishlist ? "Souhaits" : "Plateforme"}</p>
+          <h1>
+            {isWishlist
+              ? "Liste de souhaits"
+              : selectedPlatformStats?.name || selectedPlatform || "CloudCollectionApp"}
+          </h1>
+          <p className="subtitle">
+            {isWishlist
+              ? "Jeux reperes avant ajout a la collection."
+              : "Filtrer la liste par plateforme (onglet ODS)"}
+          </p>
         </div>
         <div className="platformDetailStats" aria-label="Statistiques de la plateforme">
           <article>
             <span>Jeux</span>
-            <strong>{formatNumber(selectedPlatformStats?.games_count ?? games.length)}</strong>
+            <strong>
+              {formatNumber(
+                isWishlist ? games.length : selectedPlatformStats?.games_count ?? games.length
+              )}
+            </strong>
           </article>
           <article>
             <span>Valeur</span>
@@ -125,27 +138,33 @@ function PlatformDetailView({
       </section>
       {error ? <p className="error">{error}</p> : null}
 
-      <div className="controls">
-        <label htmlFor="platform">Plateforme :</label>
-        <select
-          id="platform"
-          value={selectedPlatform}
-          onChange={(event) => onOpenPlatform(event.target.value)}
-          disabled={isLoadingPlatforms || platforms.length === 0}
-        >
-          {platforms.map((platform) => (
-            <option key={platform} value={platform}>
-              {platform}
-            </option>
-          ))}
-        </select>
-      </div>
+      {!isWishlist ? (
+        <div className="controls">
+          <label htmlFor="platform">Plateforme :</label>
+          <select
+            id="platform"
+            value={selectedPlatform}
+            onChange={(event) => onOpenPlatform(event.target.value)}
+            disabled={isLoadingPlatforms || platforms.length === 0}
+          >
+            {platforms.map((platform) => (
+              <option key={platform} value={platform}>
+                {platform}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
 
       {isLoadingPlatforms ? <p>Chargement des plateformes...</p> : null}
       {isLoadingGames ? <p>Chargement des jeux...</p> : null}
 
       {!isLoadingGames && games.length === 0 ? (
-        <p>Aucun jeu a afficher pour cette plateforme.</p>
+        <p>
+          {isWishlist
+            ? "Aucun jeu dans la liste de souhaits."
+            : "Aucun jeu a afficher pour cette plateforme."}
+        </p>
       ) : null}
 
       {!isLoadingGames && games.length > 0 ? (

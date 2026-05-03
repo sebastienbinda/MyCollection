@@ -23,6 +23,8 @@ from services.ods import (
     OdsXmlReader,
 )
 
+WISHLIST_SHEET = "Liste de souhaits"
+
 
 class JeuVideoService:
     def __init__(self, ods_path: Optional[str] = None):
@@ -57,6 +59,9 @@ class JeuVideoService:
         """
 
         dataframe = self.reader.read_games_dataframe(platform)
+        if platform == WISHLIST_SHEET:
+            return self._search_raw_dataframe(dataframe, query)
+
         items = [
             JeuVideo.from_sheet_row(record)
             for record in dataframe.to_dict(orient="records")
@@ -71,6 +76,34 @@ class JeuVideoService:
                 in " ".join(str(value).lower() for value in item.to_dict().values())
             ]
         return [item.to_dict() for item in items]
+
+    def _search_raw_dataframe(self, dataframe, query: str = "") -> list[dict]:
+        """Recherche dans un DataFrame sans conversion vers le modele `JeuVideo`.
+
+        Args:
+            dataframe (pandas.DataFrame): Donnees brutes de l'onglet.
+            query (str): Texte optionnel filtre sur toutes les valeurs.
+
+        Returns:
+            list[dict]: Lignes serialisees pour l'API.
+        """
+
+        records = [
+            {
+                str(column): SheetValueFormatter.serialize(value)
+                for column, value in record.items()
+            }
+            for record in dataframe.to_dict(orient="records")
+        ]
+        normalized_query = query.strip().lower()
+        if not normalized_query:
+            return records
+        return [
+            record
+            for record in records
+            if normalized_query
+            in " ".join(str(value).lower() for value in record.values())
+        ]
 
     def search_by_game_name(self, query: str, limit: int = 50) -> list[dict]:
         """Recherche un nom de jeu dans toutes les plateformes.

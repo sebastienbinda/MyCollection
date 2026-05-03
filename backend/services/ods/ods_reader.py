@@ -397,6 +397,17 @@ class OdsReader:
             pandas.DataFrame: Jeux lus depuis l'onglet demande.
         """
 
+        if platform == "Liste de souhaits":
+            dataframe = pd.read_excel(
+                self.ods_path,
+                sheet_name=platform,
+                engine="odf",
+                header=5,
+                usecols="F:L",
+            )
+            dataframe = dataframe.where(pd.notna(dataframe), None)
+            return self._normalize_games_dataframe_columns(dataframe)
+
         try:
             dataframe = pd.read_excel(
                 self.ods_path,
