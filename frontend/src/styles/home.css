@@ -306,33 +306,28 @@
 
 .platformGameCount {
   align-items: center;
-  border: 1px solid transparent;
+  background: #000000;
+  border: 1px solid #000000;
   border-radius: 6px;
+  color: #fde047;
   display: inline-flex;
   flex: 0 0 auto;
-  font-size: 0.86rem;
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 800;
   margin: 0;
-  padding: 0.3rem 0.58rem;
+  padding: 0.28rem 0.48rem;
   text-transform: uppercase;
 }
 
-.platformCardCountlow .platformGameCount {
-  background: rgba(99, 102, 241, 0.55);
-  border-color: rgba(255, 255, 255, 0.24);
-  color: #ffffff;
+.platformCard .platformGameCount {
+  color: #fde047;
 }
 
-.platformCardCountmedium .platformGameCount {
-  background: rgba(180, 83, 9, 0.58);
-  border-color: rgba(255, 255, 255, 0.24);
-  color: #ffffff;
-}
-
-.platformCardCounthigh .platformGameCount {
-  background: rgba(21, 128, 61, 0.58);
-  border-color: rgba(255, 255, 255, 0.24);
-  color: #ffffff;
+.platformCardTopCount .platformGameCount {
+  background: #fde047;
+  border-color: #000000;
+  box-shadow: 0 0 0 2px rgba(253, 224, 71, 0.34);
+  color: #000000;
 }
 
 .platformCardWithImage p,
@@ -342,8 +337,6 @@
 }
 
 .platformCardWithImage .platformGameCount {
-  backdrop-filter: blur(4px);
-  box-shadow: none;
   text-shadow: none;
 }
 

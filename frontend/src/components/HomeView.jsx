@@ -34,28 +34,6 @@ function HomeView({
     }
     return top;
   }, null);
-  const maxGamesCount = Math.max(
-    0,
-    ...(homeStats?.platforms || []).map((platform) => Number(platform.games_count) || 0)
-  );
-
-  /**
-   * Retourne le niveau visuel associe au nombre de jeux d'une plateforme.
-   *
-   * @param {number|string|null|undefined} gamesCount - Nombre de jeux de la plateforme.
-   * @returns {"low"|"medium"|"high"} Niveau de densite de collection.
-   */
-  const getPlatformCountLevel = (gamesCount) => {
-    const count = Number(gamesCount) || 0;
-    if (!maxGamesCount || count >= maxGamesCount * 0.66) {
-      return "high";
-    }
-    if (count >= maxGamesCount * 0.33) {
-      return "medium";
-    }
-    return "low";
-  };
-
   return (
     <main className="appShell">
       <header className="hero">
@@ -216,7 +194,7 @@ function HomeView({
                   className={[
                     "platformCard",
                     platform.has_image ? "platformCardWithImage" : "",
-                    `platformCardCount${getPlatformCountLevel(platform.games_count)}`,
+                    topPlatform?.sheet_name === platform.sheet_name ? "platformCardTopCount" : "",
                   ].join(" ")}
                   key={platform.name}
                   style={
