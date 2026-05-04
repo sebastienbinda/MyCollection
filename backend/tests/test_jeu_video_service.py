@@ -79,6 +79,7 @@ class FakeWriter:
         """
 
         self.added_games = []
+        self.deleted_wishlist_games = []
 
     def add_game(self, platform, game):
         """Enregistre l'ajout d'un jeu sans ecrire de fichier.
@@ -92,6 +93,19 @@ class FakeWriter:
         """
 
         self.added_games.append((platform, game))
+
+    def delete_wishlist_game(self, game_name, console):
+        """Enregistre la suppression wishlist sans ecrire de fichier.
+
+        Args:
+            game_name (str): Nom du jeu a supprimer.
+            console (str): Console associee.
+
+        Returns:
+            None: Les donnees sont conservees en memoire.
+        """
+
+        self.deleted_wishlist_games.append((game_name, console))
 
 
 class FakeCache:
@@ -219,6 +233,40 @@ class JeuVideoServiceTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.service.add_game({"platform": "Xbox", "Nom du jeu": "Halo"})
+
+    def test_delete_wishlist_game_resets_cache(self):
+        """Verifie la suppression d'un jeu wishlist et l'invalidation du cache.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident le comportement attendu.
+        """
+
+        item = self.service.delete_wishlist_game(
+            {"Nom du jeu": " Chrono Trigger ", "Console": " Switch 2 "}
+        )
+
+        self.assertEqual({"Nom du jeu": "Chrono Trigger", "Console": "Switch 2"}, item)
+        self.assertEqual(1, self.service.cache.reset_count)
+        self.assertEqual(
+            [("Chrono Trigger", "Switch 2")],
+            self.service.writer.deleted_wishlist_games,
+        )
+
+    def test_delete_wishlist_game_requires_console(self):
+        """Verifie la validation des donnees de suppression wishlist.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident l'erreur attendue.
+        """
+
+        with self.assertRaises(ValueError):
+            self.service.delete_wishlist_game({"Nom du jeu": "Chrono Trigger"})
 
 
 if __name__ == "__main__":

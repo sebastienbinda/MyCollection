@@ -53,6 +53,20 @@ class OdsWriter:
         content = self._build_content_with_added_game(platform=platform, game=game)
         self._write_ods_content(content)
 
+    def delete_wishlist_game(self, game_name: str, console: str) -> None:
+        """Supprime un jeu dans l'onglet `Liste de souhaits`.
+
+        Args:
+            game_name (str): Nom du jeu a supprimer.
+            console (str): Console associee a la ligne wishlist.
+
+        Returns:
+            None: Le fichier ODS est modifie sur disque.
+        """
+
+        content = self._build_content_without_wishlist_game(game_name=game_name, console=console)
+        self._write_ods_content(content)
+
     def _build_content_with_added_game(self, platform: str, game: dict[str, Any]) -> bytes:
         """Construit un nouveau `content.xml` avec une ligne de jeu ajoutee.
 
@@ -104,6 +118,67 @@ class OdsWriter:
         for offset, row in enumerate(expanded_rows):
             sheet.insert(row_insert_position + offset, row)
         return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+    def _build_content_without_wishlist_game(self, game_name: str, console: str) -> bytes:
+        """Construit un nouveau `content.xml` sans une ligne wishlist.
+
+        Args:
+            game_name (str): Nom du jeu cible.
+            console (str): Console cible.
+
+        Returns:
+            bytes: Contenu XML encode en UTF-8 a reinjecter dans l'archive ODS.
+        """
+
+        root = ET.fromstring(self.archive_reader.read_file("content.xml"))
+        sheet = self.xml_reader.find_sheet(root, "Liste de souhaits")
+        row_tag = f"{{{self.namespaces['table']}}}table-row"
+        repeated_rows_attribute = f"{{{self.namespaces['table']}}}number-rows-repeated"
+        direct_children = list(sheet)
+        row_insert_position = next(
+            (index for index, child in enumerate(direct_children) if child.tag == row_tag),
+            len(direct_children),
+        )
+        expanded_rows = self._expanded_sheet_rows(direct_children, row_tag, repeated_rows_attribute)
+        target_row_index = self._find_wishlist_game_row_index(expanded_rows, game_name, console)
+        if target_row_index is None:
+            raise ValueError("Le jeu est introuvable dans la liste de souhaits.")
+
+        expanded_rows.pop(target_row_index)
+        for child in list(sheet):
+            if child.tag == row_tag:
+                sheet.remove(child)
+        for offset, row in enumerate(expanded_rows):
+            sheet.insert(row_insert_position + offset, row)
+        return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+    def _expanded_sheet_rows(
+        self,
+        direct_children: list[ET.Element],
+        row_tag: str,
+        repeated_rows_attribute: str,
+    ) -> list[ET.Element]:
+        """Expanse les lignes XML repetees d'une feuille ODS.
+
+        Args:
+            direct_children (list[xml.etree.ElementTree.Element]): Enfants directs de la feuille.
+            row_tag (str): Balise XML des lignes.
+            repeated_rows_attribute (str): Attribut ODS de repetition de lignes.
+
+        Returns:
+            list[xml.etree.ElementTree.Element]: Lignes clonees sans attribut de repetition.
+        """
+
+        expanded_rows = []
+        for child in direct_children:
+            if child.tag != row_tag:
+                continue
+            repeated_rows = int(child.attrib.get(repeated_rows_attribute, "1"))
+            for _ in range(repeated_rows):
+                expanded_row = copy.deepcopy(child)
+                expanded_row.attrib.pop(repeated_rows_attribute, None)
+                expanded_rows.append(expanded_row)
+        return expanded_rows
 
     def _write_ods_content(self, content: bytes) -> None:
         """Ecrit le nouveau `content.xml` dans le fichier ODS.
@@ -161,6 +236,36 @@ class OdsWriter:
             if game_name:
                 last_game_row_index = index
         return last_game_row_index
+
+    def _find_wishlist_game_row_index(
+        self,
+        rows: list[ET.Element],
+        game_name: str,
+        console: str,
+    ) -> Optional[int]:
+        """Trouve la ligne wishlist correspondant au nom et a la console.
+
+        Args:
+            rows (list[xml.etree.ElementTree.Element]): Lignes XML deja expansees.
+            game_name (str): Nom du jeu recherche.
+            console (str): Console recherchee.
+
+        Returns:
+            Optional[int]: Index de la ligne trouvee, sinon `None`.
+        """
+
+        normalized_game_name = game_name.strip().lower()
+        normalized_console = console.strip().lower()
+        for index, row in enumerate(rows):
+            cells = self.xml_reader.expanded_cells(row)
+            row_game_name = self.xml_reader.cell_text_value(cells[5]) if len(cells) > 5 else ""
+            row_console = self.xml_reader.cell_text_value(cells[6]) if len(cells) > 6 else ""
+            if (
+                str(row_game_name).strip().lower() == normalized_game_name
+                and str(row_console).strip().lower() == normalized_console
+            ):
+                return index
+        return None
 
     def _set_game_row_values(self, row: ET.Element, game: dict[str, Any]) -> None:
         """Remplit les cellules d'une ligne XML avec les donnees d'un jeu.

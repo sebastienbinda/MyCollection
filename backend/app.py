@@ -254,6 +254,32 @@ def add_jeux_video_game():
         return jsonify({"error": f"Unable to update ODS file: {exc}"}), 500
 
 
+@app.delete("/collections/JeuxVideo/wishlist/games")
+def delete_jeux_video_wishlist_game():
+    """Supprime un jeu dans l'onglet ODS `Liste de souhaits`.
+
+    Args:
+        Aucun.
+
+    JSON Body:
+        dict[str, Any]: Donnees du jeu, dont `Nom du jeu` (str) et `Console` (str).
+
+    Returns:
+        tuple[flask.Response, int]: Objet JSON avec le jeu supprime ou erreur JSON.
+    """
+
+    payload = request.get_json(silent=True) or {}
+    try:
+        item = JeuVideoService().delete_wishlist_game(payload)
+        return jsonify({"type": CollectionTypes.JeuxVideo.value, "item": item})
+    except FileNotFoundError as exc:
+        return jsonify({"error": str(exc)}), 500
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"error": f"Unable to update ODS file: {exc}"}), 500
+
+
 @app.get("/collections/JeuxVideo/platform-image/<path:platform>")
 def get_jeux_video_platform_image(platform):
     """Retourne l'image embarquee dans l'onglet ODS d'une plateforme.

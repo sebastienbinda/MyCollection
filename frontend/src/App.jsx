@@ -20,10 +20,9 @@ import AddGameView from "./components/AddGameView";
 import AppFrame from "./components/AppFrame";
 import HomeView from "./components/HomeView";
 import PlatformDetailView from "./components/PlatformDetailView";
+import WishlistView from "./components/WishlistView";
 import JeuxVideoApi from "./services/JeuxVideoApi";
-
 const initialGameForm = AppRouting.createInitialGameForm();
-
 /**
  * Composant racine de l'application React.
  *
@@ -63,16 +62,15 @@ function App() {
   const [gamesReloadKey, setGamesReloadKey] = useState(0);
   const [error, setError] = useState("");
 
-  const columns =
-    games.length > 0
-      ? ["Nom du jeu", ...Object.keys(games[0]).filter((column) => column !== "Nom du jeu")]
-      : [];
-  const filteredGames = filterGames(games, columns, columnFilters);
+  const namedGames = games.filter((game) => String(game["Nom du jeu"] || "").trim() !== "");
+  const columns = namedGames.length > 0
+    ? ["Nom du jeu", ...Object.keys(namedGames[0]).filter((column) => column !== "Nom du jeu")]
+    : [];
+  const filteredGames = filterGames(namedGames, columns, columnFilters);
   const sortedGames = sortGames(filteredGames, sortConfig);
   const selectedPlatformStats = homeStats?.platforms?.find(
     (platform) => platform.sheet_name === selectedPlatform
   );
-
   /**
    * Synchronise l'URL avec la plateforme selectionnee.
    *
@@ -89,7 +87,6 @@ function App() {
     }
     window.history.pushState({}, "", `${url.pathname}${url.search}${url.hash}`);
   };
-
   /**
    * Revient a la page d'accueil.
    *
@@ -117,7 +114,6 @@ function App() {
     }));
     window.history.pushState({}, "", "/add-game");
   };
-
   /**
    * Ouvre la vue detail d'une plateforme.
    *
@@ -178,8 +174,7 @@ function App() {
   const toggleSort = (column) => {
     setSortConfig((previous) => ({
       column,
-      direction:
-        previous.column === column && previous.direction === "asc" ? "desc" : "asc",
+      direction: previous.column === column && previous.direction === "asc" ? "desc" : "asc",
     }));
   };
 
@@ -206,9 +201,8 @@ function App() {
         setIsLoadingPlatforms(true);
         setError("");
         const data = await JeuxVideoApi.fetchPlatforms();
-        const loadedPlatforms = (data.platforms || []).filter(
-          (platform) => !["Accueil", "Liste de souhaits"].includes(platform)
-        );
+        const loadedPlatforms = (data.platforms || [])
+          .filter((platform) => !["Accueil", "Liste de souhaits"].includes(platform));
         setPlatforms(loadedPlatforms);
 
         const platformFromUrl = AppRouting.getPlatformFromUrl();
@@ -356,6 +350,32 @@ function App() {
   };
 
   /**
+   * Ajoute un jeu de la wishlist dans l'onglet de sa plateforme cible.
+   *
+   * @param {Object} gamePayload - Donnees nettoyees a envoyer au backend.
+   * @returns {Promise<Object>} Donnees retournees par l'API d'ajout.
+   */
+  const addWishlistGameToPlatform = async (gamePayload) => {
+    const data = await JeuxVideoApi.addGame(gamePayload);
+    setOdsReloadKey((previous) => previous + 1);
+    setGamesReloadKey((previous) => previous + 1);
+    return data;
+  };
+
+  /**
+   * Supprime un jeu de la liste de souhaits puis recharge la vue courante.
+   *
+   * @param {Object} game - Jeu wishlist a supprimer.
+   * @returns {Promise<Object>} Donnees retournees par l'API de suppression.
+   */
+  const deleteWishlistGame = async (game) => {
+    const data = await JeuxVideoApi.deleteWishlistGame(game);
+    setOdsReloadKey((previous) => previous + 1);
+    setGamesReloadKey((previous) => previous + 1);
+    return data;
+  };
+
+  /**
    * Reinitialise le cache ODS backend puis recharge les donnees de l'interface.
    *
    * @param {void} Aucun - Appelle l'endpoint de reset du cache.
@@ -456,14 +476,38 @@ function App() {
     );
   }
 
+  if (currentView === "wishlist") {
+    return (
+      <AppFrame>
+      <WishlistView
+        games={namedGames}
+        columns={columns}
+        valuesByColumn={valuesByColumn}
+        columnFilters={columnFilters}
+        sortConfig={sortConfig}
+        sortedGames={sortedGames}
+        filteredGames={filteredGames}
+        error={error}
+        isLoadingGames={isLoadingGames}
+        platforms={platforms}
+        onBack={goHome}
+        onAddWishlistGameToPlatform={addWishlistGameToPlatform}
+        onDeleteWishlistGame={deleteWishlistGame}
+        onToggleSort={toggleSort}
+        onColumnFiltersChange={setColumnFilters}
+      />
+      </AppFrame>
+    );
+  }
+
   return (
     <AppFrame>
     <PlatformDetailView
       selectedPlatform={selectedPlatform}
       selectedPlatformStats={selectedPlatformStats}
-      studioCount={getStudioCount(games)}
+      studioCount={getStudioCount(namedGames)}
       platforms={platforms}
-      games={games}
+      games={namedGames}
       columns={columns}
       valuesByColumn={valuesByColumn}
       columnFilters={columnFilters}
@@ -473,7 +517,6 @@ function App() {
       error={error}
       isLoadingPlatforms={isLoadingPlatforms}
       isLoadingGames={isLoadingGames}
-      isWishlist={currentView === "wishlist"}
       onBack={goHome}
       onOpenPlatform={openPlatform}
       onToggleSort={toggleSort}

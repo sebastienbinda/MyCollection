@@ -76,6 +76,29 @@ class JeuxVideoApi {
   }
 
   /**
+   * Supprime un jeu de la liste de souhaits.
+   *
+   * @param {Object} game - Jeu wishlist identifie par son nom et sa console.
+   * @returns {Promise<Object>} Objet contenant le jeu supprime.
+   */
+  static async deleteWishlistGame(game) {
+    return this.fetchJson(
+      "/collections/JeuxVideo/wishlist/games",
+      "Impossible de supprimer le jeu de la liste de souhaits.",
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          "Nom du jeu": game["Nom du jeu"],
+          Console: game.Console || game.Plateforme,
+        }),
+      }
+    );
+  }
+
+  /**
    * Recherche un jeu par nom dans toutes les plateformes.
    *
    * @param {string} query - Texte recherche dans le nom du jeu.

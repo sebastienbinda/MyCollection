@@ -155,6 +155,27 @@ class JeuVideoService:
         self.reset_cache()
         return {"Plateforme": platform, **game}
 
+    def delete_wishlist_game(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Supprime un jeu de l'onglet `Liste de souhaits`.
+
+        Args:
+            payload (dict[str, Any]): Donnees contenant `Nom du jeu` et `Console`.
+
+        Returns:
+            dict[str, Any]: Jeu supprime, identifie par son nom et sa console.
+        """
+
+        game_name = SheetValueFormatter.clean_text(payload.get("Nom du jeu"))
+        console = SheetValueFormatter.clean_text(payload.get("Console"))
+        if not game_name:
+            raise ValueError("Le nom du jeu est obligatoire.")
+        if not console:
+            raise ValueError("La console est obligatoire.")
+
+        self.writer.delete_wishlist_game(game_name=game_name, console=console)
+        self.reset_cache()
+        return {"Nom du jeu": game_name, "Console": console}
+
     def reset_cache(self) -> int:
         """Vide le cache des donnees lues depuis le fichier ODS.
 

@@ -62,6 +62,10 @@ function HomeView({
         <div>
           <p className="eyebrow">Collection personnelle</p>
           <h1>{homeStats?.title || "Ma collection"}</h1>
+          <p className="heroDateSummary">
+            <span>Premier jeu : {formatCellValue("Date", homeStats?.first_game_date)}</span>
+            <span>Dernier jeu : {formatCellValue("Date", homeStats?.last_game_date)}</span>
+          </p>
           <p className="subtitle">Jeux, plateformes et statistiques essentielles.</p>
         </div>
         <div className="heroActions">
@@ -199,21 +203,12 @@ function HomeView({
             </article>
           </section>
 
-          <section className="dateBand" aria-label="Periode de la collection">
-            <div>
-              <span>Premier jeu</span>
-              <strong>{formatCellValue("Date", homeStats.first_game_date)}</strong>
-            </div>
-            <div>
-              <span>Dernier jeu</span>
-              <strong>{formatCellValue("Date", homeStats.last_game_date)}</strong>
-            </div>
-          </section>
-
           <section className="platformSection">
             <div className="sectionHeader">
-              <h2>Plateformes</h2>
-              <span>{formatNumber(homeStats.platforms?.length || 0)} onglets</span>
+              <div>
+                <h2>Plateformes</h2>
+                <span>{formatNumber(homeStats.platforms?.length || 0)} onglets</span>
+              </div>
             </div>
             <div className="platformGrid">
               {(homeStats.platforms || []).map((platform) => (

@@ -75,6 +75,20 @@ class FakeJeuVideoService:
             raise ValueError("Le nom du jeu est obligatoire.")
         return {"Plateforme": payload.get("platform"), "Nom du jeu": payload.get("Nom du jeu")}
 
+    def delete_wishlist_game(self, payload):
+        """Retourne le jeu wishlist supprime sans modifier de fichier.
+
+        Args:
+            payload (dict[str, str]): Donnees du jeu.
+
+        Returns:
+            dict[str, str]: Jeu supprime.
+        """
+
+        if not payload.get("Console"):
+            raise ValueError("La console est obligatoire.")
+        return {"Nom du jeu": payload.get("Nom du jeu"), "Console": payload.get("Console")}
+
 
 class AppRoutesTest(unittest.TestCase):
     def setUp(self):
@@ -163,6 +177,42 @@ class AppRoutesTest(unittest.TestCase):
         """
 
         response = self.client.post("/collections/JeuxVideo/games", json={"platform": "Switch"})
+
+        self.assertEqual(400, response.status_code)
+        self.assertIn("obligatoire", response.get_json()["error"])
+
+    def test_delete_wishlist_game_route_returns_deleted_item(self):
+        """Verifie l'endpoint de suppression wishlist.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+
+        response = self.client.delete(
+            "/collections/JeuxVideo/wishlist/games",
+            json={"Nom du jeu": "Chrono Trigger", "Console": "Switch 2"},
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("Switch 2", response.get_json()["item"]["Console"])
+
+    def test_delete_wishlist_game_route_returns_validation_error(self):
+        """Verifie les erreurs de validation de suppression wishlist.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+
+        response = self.client.delete(
+            "/collections/JeuxVideo/wishlist/games",
+            json={"Nom du jeu": "Chrono Trigger"},
+        )
 
         self.assertEqual(400, response.status_code)
         self.assertIn("obligatoire", response.get_json()["error"])
