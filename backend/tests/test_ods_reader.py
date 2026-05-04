@@ -61,8 +61,9 @@ class OdsReaderFallbackTest(unittest.TestCase):
             None: Les assertions valident les statistiques recalculees.
         """
 
-        with patch("services.ods.ods_reader.pd.read_excel", return_value=self._home_dataframe()):
-            stats = self.reader.get_home_stats()
+        with patch.dict("services.ods.ods_reader.os.environ", {}, clear=True):
+            with patch("services.ods.ods_reader.pd.read_excel", return_value=self._home_dataframe()):
+                stats = self.reader.get_home_stats()
 
         self.assertEqual(3, stats["totals"]["games_count"])
         self.assertEqual("Ma collection", stats["title"])
@@ -85,6 +86,9 @@ class OdsReaderFallbackTest(unittest.TestCase):
         """
 
         dataframe = self._home_dataframe()
+        dataframe = dataframe.astype(
+            {"Nombre de jeux": "object", "Prix": "object", "Prix moyen": "object"}
+        )
         dataframe.loc[dataframe["Plateforme"] == "Switch", "Nombre de jeux"] = 99
         dataframe.loc[dataframe["Plateforme"] == "Switch", "Prix"] = 1234
         dataframe.loc[dataframe["Plateforme"] == "Switch", "Prix moyen"] = 12.46
@@ -125,8 +129,9 @@ class OdsReaderFallbackTest(unittest.TestCase):
         """
 
         self.reader.cache.reset()
-        with patch("services.ods.ods_reader.pd.read_excel", side_effect=TypeError("formula cache")):
-            stats = self.reader.get_home_stats()
+        with patch.dict("services.ods.ods_reader.os.environ", {}, clear=True):
+            with patch("services.ods.ods_reader.pd.read_excel", side_effect=TypeError("formula cache")):
+                stats = self.reader.get_home_stats()
 
         self.assertEqual(3, stats["totals"]["games_count"])
         self.assertEqual(60.5, stats["totals"]["total_price"])

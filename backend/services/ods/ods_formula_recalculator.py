@@ -39,7 +39,10 @@ class OdsFormulaRecalculator:
         """
 
         self.mode = (mode or os.getenv("ODS_FORMULA_RECALCULATION", "auto")).strip().lower()
-        self.binary_path = binary_path or os.getenv("LIBREOFFICE_BIN") or self._find_binary()
+        if binary_path is None:
+            self.binary_path = os.getenv("LIBREOFFICE_BIN") or self._find_binary()
+        else:
+            self.binary_path = binary_path
 
     def recalculate(self, ods_path: str) -> bool:
         """Recalcule les formules d'un ODS si LibreOffice est disponible.
