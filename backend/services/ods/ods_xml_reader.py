@@ -230,6 +230,10 @@ class OdsXmlReader:
         if value_type == "float" and value_attribute in cell.attrib:
             value = float(cell.attrib[value_attribute])
             return int(value) if value.is_integer() else value
+        if value_type == "float":
+            return None
         if value_type == "date" and date_value_attribute in cell.attrib:
             return cell.attrib[date_value_attribute]
+        if value_type == "date":
+            return None
         return self.cell_text_value(cell)

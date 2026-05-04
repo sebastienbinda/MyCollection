@@ -122,7 +122,10 @@ class OdsReader:
             dict[str, Any]: Statistiques d'accueil serialisables en JSON.
         """
 
-        dataframe = pd.read_excel(self.ods_path, sheet_name="Accueil", engine="odf", header=5)
+        try:
+            dataframe = pd.read_excel(self.ods_path, sheet_name="Accueil", engine="odf", header=5)
+        except (TypeError, ValueError):
+            return self._load_computed_home_stats()
         dataframe = dataframe.where(pd.notna(dataframe), None)
         sheet_names_by_key = {
             SheetValueFormatter.normalize_platform_name(platform): platform
@@ -167,6 +170,42 @@ class OdsReader:
             "totals": totals,
             "first_game_date": first_game_date,
             "last_game_date": last_game_date,
+        }
+
+    def _load_computed_home_stats(self) -> dict[str, Any]:
+        """Construit l'accueil depuis les plateformes si l'onglet Accueil est illisible.
+
+        Args:
+            Aucun.
+
+        Returns:
+            dict[str, Any]: Statistiques d'accueil recalculees sans valeurs de formules en cache.
+        """
+
+        image_paths_by_sheet = self.image_reader.list_platform_image_paths()
+        platforms = []
+        for platform in self.list_platforms():
+            computed_stats = self._compute_platform_stats(platform)
+            platforms.append(
+                {
+                    "name": platform,
+                    "sheet_name": platform,
+                    "image_url": f"/collections/JeuxVideo/platform-image/{platform}",
+                    "has_image": platform in image_paths_by_sheet,
+                    **computed_stats,
+                }
+            )
+        computed_totals = self._compute_home_totals(platforms)
+        return {
+            "title": os.getenv("APP_HOME_TITLE", "Ma collection"),
+            "platforms": platforms,
+            "totals": {
+                "games_count": computed_totals["games_count"],
+                "total_price": computed_totals["total_price"],
+                "average_price": computed_totals["average_price"],
+            },
+            "first_game_date": computed_totals["first_game_date"],
+            "last_game_date": computed_totals["last_game_date"],
         }
 
     def _merge_home_totals(
@@ -397,27 +436,16 @@ class OdsReader:
             pandas.DataFrame: Jeux lus depuis l'onglet demande.
         """
 
-        if platform == "Liste de souhaits":
-            dataframe = pd.read_excel(
-                self.ods_path,
-                sheet_name=platform,
-                engine="odf",
-                header=5,
-                usecols="F:L",
-            )
-            dataframe = dataframe.where(pd.notna(dataframe), None)
-            return self._normalize_games_dataframe_columns(dataframe)
-
         try:
             dataframe = pd.read_excel(
                 self.ods_path,
                 sheet_name=platform,
                 engine="odf",
                 header=5,
-                usecols="F:M",
+                usecols="F:L" if platform == "Liste de souhaits" else "F:M",
             )
             dataframe = dataframe.where(pd.notna(dataframe), None)
-        except ValueError:
+        except (TypeError, ValueError):
             if platform not in self.list_platforms():
                 raise
             dataframe = self.xml_reader.read_games_dataframe_from_xml(platform)

@@ -17,6 +17,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 import xml.etree.ElementTree as ET
 
 from .ods_archive_reader import OdsArchiveReader
+from .ods_formula_recalculator import OdsFormulaRecalculator
 from .ods_game_row_editor import OdsGameRowEditor
 from .ods_integrity_validator import OdsIntegrityValidator
 from .ods_namespaces import OdsNamespaces
@@ -43,6 +44,7 @@ class OdsWriter:
         self.namespaces = OdsNamespaces.values
         self.row_editor = OdsGameRowEditor(xml_reader)
         self.integrity_validator = OdsIntegrityValidator()
+        self.formula_recalculator = OdsFormulaRecalculator()
 
     def add_game(self, platform: str, game: dict[str, Any]) -> None:
         """Ajoute un jeu dans le contenu XML de l'ODS.
@@ -262,6 +264,8 @@ class OdsWriter:
                         target_archive.writestr(item, source_archive.read(item.filename))
         os.replace(tmp_path, self.ods_path)
         try:
+            self.integrity_validator.validate(self.ods_path)
+            self.formula_recalculator.recalculate(self.ods_path)
             self.integrity_validator.validate(self.ods_path)
         except Exception as exc:
             shutil.copy2(backup_path, self.ods_path)

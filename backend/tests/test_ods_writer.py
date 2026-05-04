@@ -53,6 +53,22 @@ class FakeArchiveReader:
         return self.content
 
 
+class FailingFormulaRecalculator:
+    """Recalculateur factice qui simule un echec LibreOffice."""
+
+    def recalculate(self, ods_path: str) -> bool:
+        """Declenche une erreur de recalcul.
+
+        Args:
+            ods_path (str): Chemin ODS ignore.
+
+        Returns:
+            bool: Ne retourne jamais.
+        """
+
+        raise ValueError("Erreur LibreOffice simulee.")
+
+
 class OdsWriterTest(unittest.TestCase):
     """Tests unitaires du comportement d'ajout de jeux dans un ODS."""
 
@@ -246,6 +262,34 @@ class OdsWriterTest(unittest.TestCase):
 
             with self.assertRaises(ValueError):
                 writer._write_ods_content(self._build_formula_content('of:=SUM([.A1:.A2]'))
+
+            with ZipFile(ods_path, "r") as archive:
+                restored_content = archive.read("content.xml")
+            self.assertEqual(original_content, restored_content)
+
+    def test_write_ods_content_restores_backup_when_recalculation_fails(self):
+        """Verifie la restauration du backup si LibreOffice echoue.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident que le fichier original est restaure.
+        """
+
+        with TemporaryDirectory() as directory:
+            ods_path = f"{directory}/collection.ods"
+            original_content = self._build_sheet_content()
+            self._write_ods_file(ods_path, original_content)
+            writer = OdsWriter(
+                ods_path=ods_path,
+                archive_reader=FakeArchiveReader(original_content),
+                xml_reader=self._xml_reader(),
+            )
+            writer.formula_recalculator = FailingFormulaRecalculator()
+
+            with self.assertRaises(ValueError):
+                writer._write_ods_content(self._build_sheet_content())
 
             with ZipFile(ods_path, "r") as archive:
                 restored_content = archive.read("content.xml")

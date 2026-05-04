@@ -19,8 +19,9 @@ services:
       APP_HOME_TITLE: ${APP_HOME_TITLE:-Ma collection}
       BACKEND_PORT: "7777"
       JEUXVIDEO_ODS_PATH: /data/${JEUXVIDEO_ODS_FILENAME:-JeuxVideo-v2.ods}
+      ODS_FORMULA_RECALCULATION: required
     volumes:
-      - ${JEUXVIDEO_ODS_HOST_DIR:-/Users/sebastien/Documents}:/data
+      - ${JEUXVIDEO_ODS_HOST_DIR:-/Users/sebastien/Documents/Documents}:/data
     expose:
       - "7777"
     restart: unless-stopped

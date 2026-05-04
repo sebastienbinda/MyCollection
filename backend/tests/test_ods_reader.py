@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from services.ods import OdsCache, OdsReader
+from services.ods import OdsCache, OdsReader, OdsXmlReader
 
 
 class FakeImageReader:
@@ -114,6 +114,48 @@ class OdsReaderFallbackTest(unittest.TestCase):
 
         self.assertEqual("Mes RPG", stats["title"])
 
+    def test_home_stats_fallback_when_pandas_cannot_read_formulas(self):
+        """Verifie le fallback si pandas echoue sur des formules sans cache.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident l'accueil recalcule.
+        """
+
+        self.reader.cache.reset()
+        with patch("services.ods.ods_reader.pd.read_excel", side_effect=TypeError("formula cache")):
+            stats = self.reader.get_home_stats()
+
+        self.assertEqual(3, stats["totals"]["games_count"])
+        self.assertEqual(60.5, stats["totals"]["total_price"])
+
+    def test_xml_reader_returns_none_for_formula_float_without_cached_value(self):
+        """Verifie la lecture d'une formule sans resultat calcule en cache.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident l'absence de crash et la valeur vide.
+        """
+
+        value_type_attribute = "{urn:oasis:names:tc:opendocument:xmlns:office:1.0}value-type"
+        value_attribute = "{urn:oasis:names:tc:opendocument:xmlns:office:1.0}value"
+        date_value_attribute = "{urn:oasis:names:tc:opendocument:xmlns:office:1.0}date-value"
+        cell = self._cell_with_attribute(value_type_attribute, "float")
+
+        xml_reader = OdsXmlReader.__new__(OdsXmlReader)
+        value = xml_reader.extract_cell_value(
+            cell,
+            value_type_attribute,
+            value_attribute,
+            date_value_attribute,
+        )
+
+        self.assertIsNone(value)
+
     def _home_dataframe(self):
         """Construit un DataFrame Accueil avec erreurs de formules.
 
@@ -185,6 +227,24 @@ class OdsReaderFallbackTest(unittest.TestCase):
             ),
         }
         return games_by_platform[platform]
+
+    def _cell_with_attribute(self, attribute, value):
+        """Construit une cellule XML avec un attribut.
+
+        Args:
+            attribute (str): Nom qualifie de l'attribut XML.
+            value (str): Valeur d'attribut.
+
+        Returns:
+            xml.etree.ElementTree.Element: Cellule XML factice.
+        """
+
+        import xml.etree.ElementTree as ET
+
+        return ET.Element(
+            "{urn:oasis:names:tc:opendocument:xmlns:table:1.0}table-cell",
+            {attribute: value},
+        )
 
 
 if __name__ == "__main__":

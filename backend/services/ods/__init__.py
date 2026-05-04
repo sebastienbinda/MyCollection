@@ -12,6 +12,7 @@
 
 from .ods_archive_reader import OdsArchiveReader
 from .ods_cache import OdsCache
+from .ods_formula_recalculator import OdsFormulaRecalculator
 from .ods_image_reader import OdsImageReader
 from .ods_namespaces import OdsNamespaces
 from .ods_path_resolver import OdsPathResolver
@@ -22,6 +23,7 @@ from .ods_xml_reader import OdsXmlReader
 __all__ = [
     "OdsArchiveReader",
     "OdsCache",
+    "OdsFormulaRecalculator",
     "OdsImageReader",
     "OdsNamespaces",
     "OdsPathResolver",
