@@ -16,11 +16,8 @@ import {
   sortGames,
 } from "./collectionUtils";
 import AppRouting from "./appRouting";
-import AddGameView from "./components/AddGameView";
 import AppFrame from "./components/AppFrame";
-import HomeView from "./components/HomeView";
-import PlatformDetailView from "./components/PlatformDetailView";
-import WishlistView from "./components/WishlistView";
+import AppViewSwitch from "./components/AppViewSwitch";
 import JeuxVideoApi from "./services/JeuxVideoApi";
 const initialGameForm = AppRouting.createInitialGameForm();
 /**
@@ -50,6 +47,8 @@ function App() {
   const [addGameMessage, setAddGameMessage] = useState("");
   const [addGameError, setAddGameError] = useState("");
   const [addGameColumnValues, setAddGameColumnValues] = useState({});
+  const [deleteGameMessage, setDeleteGameMessage] = useState("");
+  const [deleteGameError, setDeleteGameError] = useState("");
   const [cacheResetMessage, setCacheResetMessage] = useState("");
   const [cacheResetError, setCacheResetError] = useState("");
   const [isLoadingHome, setIsLoadingHome] = useState(true);
@@ -87,6 +86,18 @@ function App() {
     }
     window.history.pushState({}, "", `${url.pathname}${url.search}${url.hash}`);
   };
+
+  /**
+   * Efface les messages lies a la suppression d'un jeu de plateforme.
+   *
+   * @param {void} Aucun - Utilise les setters React de feedback.
+   * @returns {void} Vide le succes et l'erreur de suppression.
+   */
+  const clearDeleteGameFeedback = () => {
+    setDeleteGameMessage("");
+    setDeleteGameError("");
+  };
+
   /**
    * Revient a la page d'accueil.
    *
@@ -94,6 +105,7 @@ function App() {
    * @returns {void} Met `currentView` a `home` et remplace l'URL par `/`.
    */
   const goHome = () => {
+    clearDeleteGameFeedback();
     setCurrentView("home");
     window.history.pushState({}, "", "/");
   };
@@ -105,6 +117,7 @@ function App() {
    * @returns {void} Affiche la vue `addGame` et pousse `/add-game` dans l'historique.
    */
   const openAddGamePage = () => {
+    clearDeleteGameFeedback();
     setCurrentView("addGame");
     setAddGameMessage("");
     setAddGameError("");
@@ -121,6 +134,7 @@ function App() {
    * @returns {void} Met a jour l'etat React et l'URL.
    */
   const openPlatform = (platform) => {
+    clearDeleteGameFeedback();
     setSelectedPlatform(platform);
     setCurrentView("games");
     updatePlatformUrl(platform);
@@ -133,6 +147,7 @@ function App() {
    * @returns {void} Met a jour l'etat React et l'URL.
    */
   const openWishlist = () => {
+    clearDeleteGameFeedback();
     setSelectedPlatform(AppRouting.wishlistSheetName);
     setCurrentView("wishlist");
     window.history.pushState({}, "", "/wishlist");
@@ -230,6 +245,7 @@ function App() {
 
   useEffect(() => {
     const handlePopState = () => {
+      clearDeleteGameFeedback();
       if (window.location.pathname === "/add-game") {
         setCurrentView("addGame");
         return;
@@ -376,6 +392,36 @@ function App() {
   };
 
   /**
+   * Supprime un jeu de la plateforme courante puis recharge les donnees.
+   *
+   * @param {Object} game - Jeu de plateforme a supprimer.
+   * @returns {Promise<void>} Vide les cellules du jeu et actualise l'interface.
+   */
+  const deletePlatformGame = async (game) => {
+    const gameName = game["Nom du jeu"] || "ce jeu";
+    const confirmed = window.confirm(`Confirmer la suppression de "${gameName}" ?`);
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleteGameMessage("");
+    setDeleteGameError("");
+    try {
+      await JeuxVideoApi.deleteGame({
+        platform: selectedPlatform,
+        ...game,
+      });
+      setDeleteGameMessage(`${gameName} a ete supprime de ${selectedPlatform}.`);
+      setOdsReloadKey((previous) => previous + 1);
+      setGamesReloadKey((previous) => previous + 1);
+    } catch (e) {
+      const message = e.message || "Impossible de supprimer le jeu.";
+      setDeleteGameError(message);
+      window.alert(message);
+    }
+  };
+
+  /**
    * Reinitialise le cache ODS backend puis recharge les donnees de l'interface.
    *
    * @param {void} Aucun - Appelle l'endpoint de reset du cache.
@@ -429,99 +475,24 @@ function App() {
     }
   };
 
-  if (currentView === "home") {
-    return (
-      <AppFrame>
-      <HomeView
-        homeStats={homeStats}
-        platforms={platforms}
-        selectedPlatform={selectedPlatform}
-        error={error}
-        isLoadingHome={isLoadingHome}
-        isSearchingGames={isSearchingGames}
-        hasSearchedGames={hasSearchedGames}
-        homeSearchQuery={homeSearchQuery}
-        homeSearchResults={homeSearchResults}
-        homeSearchError={homeSearchError}
-        cacheResetMessage={cacheResetMessage}
-        cacheResetError={cacheResetError}
-        isResettingCache={isResettingCache}
-        onAddGame={openAddGamePage}
-        onOpenWishlist={openWishlist}
-        onOpenPlatform={openPlatform}
-        onSearchQueryChange={setHomeSearchQuery}
-        onSearchSubmit={searchGamesByName}
-        onCloseSearch={closeHomeSearch}
-        onResetCache={resetOdsCache}
-      />
-      </AppFrame>
-    );
-  }
-
-  if (currentView === "addGame") {
-    return (
-      <AppFrame>
-      <AddGameView
-        platforms={platforms}
-        gameForm={gameForm}
-        addGameColumnValues={addGameColumnValues}
-        addGameError={addGameError}
-        addGameMessage={addGameMessage}
-        isAddingGame={isAddingGame}
-        onBack={goHome}
-        onSubmit={submitNewGame}
-        onFieldChange={updateGameFormValue}
-      />
-      </AppFrame>
-    );
-  }
-
-  if (currentView === "wishlist") {
-    return (
-      <AppFrame>
-      <WishlistView
-        games={namedGames}
-        columns={columns}
-        valuesByColumn={valuesByColumn}
-        columnFilters={columnFilters}
-        sortConfig={sortConfig}
-        sortedGames={sortedGames}
-        filteredGames={filteredGames}
-        error={error}
-        isLoadingGames={isLoadingGames}
-        platforms={platforms}
-        onBack={goHome}
-        onAddWishlistGameToPlatform={addWishlistGameToPlatform}
-        onDeleteWishlistGame={deleteWishlistGame}
-        onToggleSort={toggleSort}
-        onColumnFiltersChange={setColumnFilters}
-      />
-      </AppFrame>
-    );
-  }
-
   return (
     <AppFrame>
-    <PlatformDetailView
-      selectedPlatform={selectedPlatform}
-      selectedPlatformStats={selectedPlatformStats}
-      studioCount={getStudioCount(namedGames)}
-      platforms={platforms}
-      games={namedGames}
-      columns={columns}
-      valuesByColumn={valuesByColumn}
-      columnFilters={columnFilters}
-      sortConfig={sortConfig}
-      sortedGames={sortedGames}
-      filteredGames={filteredGames}
-      error={error}
-      isLoadingPlatforms={isLoadingPlatforms}
-      isLoadingGames={isLoadingGames}
-      onBack={goHome}
-      onOpenPlatform={openPlatform}
-      onToggleSort={toggleSort}
-      onColumnFiltersChange={setColumnFilters}
-    />
+      {AppViewSwitch.render({
+        currentView, homeStats, platforms, selectedPlatform, error,
+        isLoadingHome, isSearchingGames, hasSearchedGames,
+        homeSearchQuery, homeSearchResults, homeSearchError,
+        cacheResetMessage, cacheResetError, isResettingCache,
+        gameForm, addGameColumnValues, addGameError, addGameMessage, isAddingGame,
+        namedGames, columns, valuesByColumn, columnFilters, sortConfig,
+        sortedGames, filteredGames, isLoadingGames,
+        selectedPlatformStats,
+        studioCount: getStudioCount(namedGames),
+        deleteGameMessage, deleteGameError, isLoadingPlatforms,
+        openAddGamePage, openWishlist, openPlatform, setHomeSearchQuery,
+        searchGamesByName, closeHomeSearch, resetOdsCache, goHome,
+        submitNewGame, updateGameFormValue, addWishlistGameToPlatform,
+        deleteWishlistGame, toggleSort, setColumnFilters, deletePlatformGame,
+      })}
     </AppFrame>
   );
 }

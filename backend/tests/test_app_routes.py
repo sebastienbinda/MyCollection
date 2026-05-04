@@ -89,6 +89,20 @@ class FakeJeuVideoService:
             raise ValueError("La console est obligatoire.")
         return {"Nom du jeu": payload.get("Nom du jeu"), "Console": payload.get("Console")}
 
+    def delete_game(self, payload):
+        """Retourne le jeu supprime sans modifier de fichier.
+
+        Args:
+            payload (dict[str, str]): Donnees du jeu.
+
+        Returns:
+            dict[str, str]: Jeu supprime.
+        """
+
+        if not payload.get("Nom du jeu"):
+            raise ValueError("Le nom du jeu est obligatoire.")
+        return {"Plateforme": payload.get("platform"), "Nom du jeu": payload.get("Nom du jeu")}
+
 
 class AppRoutesTest(unittest.TestCase):
     def setUp(self):
@@ -198,6 +212,39 @@ class AppRoutesTest(unittest.TestCase):
 
         self.assertEqual(200, response.status_code)
         self.assertEqual("Switch 2", response.get_json()["item"]["Console"])
+
+    def test_delete_game_route_returns_deleted_item(self):
+        """Verifie l'endpoint de suppression d'un jeu de plateforme.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+
+        response = self.client.delete(
+            "/collections/JeuxVideo/games",
+            json={"platform": "Switch", "Nom du jeu": "Metroid"},
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("Metroid", response.get_json()["item"]["Nom du jeu"])
+
+    def test_delete_game_route_returns_validation_error(self):
+        """Verifie les erreurs de validation de suppression d'un jeu.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+
+        response = self.client.delete("/collections/JeuxVideo/games", json={"platform": "Switch"})
+
+        self.assertEqual(400, response.status_code)
+        self.assertIn("obligatoire", response.get_json()["error"])
 
     def test_delete_wishlist_game_route_returns_validation_error(self):
         """Verifie les erreurs de validation de suppression wishlist.

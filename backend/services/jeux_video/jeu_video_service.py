@@ -176,6 +176,30 @@ class JeuVideoService:
         self.reset_cache()
         return {"Nom du jeu": game_name, "Console": console}
 
+    def delete_game(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Supprime un jeu d'une plateforme en vidant uniquement ses colonnes de jeu.
+
+        Args:
+            payload (dict[str, Any]): Donnees contenant `platform` et `Nom du jeu`.
+
+        Returns:
+            dict[str, Any]: Jeu supprime, enrichi avec `Plateforme`.
+        """
+
+        platform = SheetValueFormatter.clean_text(payload.get("platform"))
+        game_name = SheetValueFormatter.clean_text(payload.get("Nom du jeu"))
+        if not platform:
+            raise ValueError("La plateforme est obligatoire.")
+        if platform not in self.list_platforms():
+            raise ValueError(f"Sheet '{platform}' not found in ODS file.")
+        if not game_name:
+            raise ValueError("Le nom du jeu est obligatoire.")
+
+        game = self._build_game_payload(payload, game_name)
+        self.writer.delete_game(platform=platform, game=game)
+        self.reset_cache()
+        return {"Plateforme": platform, **game}
+
     def reset_cache(self) -> int:
         """Vide le cache des donnees lues depuis le fichier ODS.
 

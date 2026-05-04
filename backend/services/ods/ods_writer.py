@@ -17,6 +17,8 @@ from zipfile import ZIP_DEFLATED, ZipFile
 import xml.etree.ElementTree as ET
 
 from .ods_archive_reader import OdsArchiveReader
+from .ods_game_row_editor import OdsGameRowEditor
+from .ods_integrity_validator import OdsIntegrityValidator
 from .ods_namespaces import OdsNamespaces
 from .ods_xml_reader import OdsXmlReader
 
@@ -34,10 +36,13 @@ class OdsWriter:
             None: Le constructeur ne retourne aucune valeur.
         """
 
+        OdsNamespaces.register()
         self.ods_path = ods_path
         self.archive_reader = archive_reader
         self.xml_reader = xml_reader
         self.namespaces = OdsNamespaces.values
+        self.row_editor = OdsGameRowEditor(xml_reader)
+        self.integrity_validator = OdsIntegrityValidator()
 
     def add_game(self, platform: str, game: dict[str, Any]) -> None:
         """Ajoute un jeu dans le contenu XML de l'ODS.
@@ -65,6 +70,20 @@ class OdsWriter:
         """
 
         content = self._build_content_without_wishlist_game(game_name=game_name, console=console)
+        self._write_ods_content(content)
+
+    def delete_game(self, platform: str, game: dict[str, Any]) -> None:
+        """Vide un jeu dans une plateforme sans modifier les colonnes hors table.
+
+        Args:
+            platform (str): Onglet ODS dans lequel supprimer le jeu.
+            game (dict[str, Any]): Donnees permettant d'identifier la ligne de jeu.
+
+        Returns:
+            None: Le fichier ODS est modifie sur disque.
+        """
+
+        content = self._build_content_without_game(platform=platform, game=game)
         self._write_ods_content(content)
 
     def _build_content_with_added_game(self, platform: str, game: dict[str, Any]) -> bytes:
@@ -104,20 +123,25 @@ class OdsWriter:
         if last_game_row_index is None:
             raise ValueError(f"Unable to find a template row in sheet '{platform}'.")
 
-        target_row_index = last_game_row_index + 1
         template_row = copy.deepcopy(expanded_rows[last_game_row_index])
-        self._set_game_row_values(template_row, game)
-        if target_row_index < stats_row_index:
-            expanded_rows[target_row_index] = template_row
-        else:
-            expanded_rows.insert(stats_row_index, template_row)
+        target_row_index = self.row_editor.find_next_available_game_row_index(
+            expanded_rows,
+            last_game_row_index + 1,
+        )
+        if target_row_index is None:
+            target_row_index = len(expanded_rows)
+            expanded_rows.append(ET.Element(row_tag))
+
+        target_row = copy.deepcopy(expanded_rows[target_row_index])
+        self.row_editor.set_game_row_values(target_row, template_row, game)
+        expanded_rows[target_row_index] = target_row
 
         for child in list(sheet):
             if child.tag == row_tag:
                 sheet.remove(child)
         for offset, row in enumerate(expanded_rows):
             sheet.insert(row_insert_position + offset, row)
-        return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+        return self._serialized_content(root)
 
     def _build_content_without_wishlist_game(self, game_name: str, console: str) -> bytes:
         """Construit un nouveau `content.xml` sans une ligne wishlist.
@@ -150,7 +174,42 @@ class OdsWriter:
                 sheet.remove(child)
         for offset, row in enumerate(expanded_rows):
             sheet.insert(row_insert_position + offset, row)
-        return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+        return self._serialized_content(root)
+
+    def _build_content_without_game(self, platform: str, game: dict[str, Any]) -> bytes:
+        """Construit un nouveau `content.xml` avec les cellules de jeu videes.
+
+        Args:
+            platform (str): Onglet ODS dans lequel supprimer le jeu.
+            game (dict[str, Any]): Donnees du jeu cible, avec au minimum `Nom du jeu`.
+
+        Returns:
+            bytes: Contenu XML encode en UTF-8 a reinjecter dans l'archive ODS.
+        """
+
+        root = ET.fromstring(self.archive_reader.read_file("content.xml"))
+        sheet = self.xml_reader.find_sheet(root, platform)
+        row_tag = f"{{{self.namespaces['table']}}}table-row"
+        repeated_rows_attribute = f"{{{self.namespaces['table']}}}number-rows-repeated"
+        direct_children = list(sheet)
+        row_insert_position = next(
+            (index for index, child in enumerate(direct_children) if child.tag == row_tag),
+            len(direct_children),
+        )
+        expanded_rows = self._expanded_sheet_rows(direct_children, row_tag, repeated_rows_attribute)
+        target_row_index = self.row_editor.find_game_row_index(expanded_rows, game)
+        if target_row_index is None:
+            raise ValueError("Le jeu est introuvable dans la plateforme.")
+
+        target_row = copy.deepcopy(expanded_rows[target_row_index])
+        self.row_editor.clear_game_row_values(target_row)
+        expanded_rows[target_row_index] = target_row
+        for child in list(sheet):
+            if child.tag == row_tag:
+                sheet.remove(child)
+        for offset, row in enumerate(expanded_rows):
+            sheet.insert(row_insert_position + offset, row)
+        return self._serialized_content(root)
 
     def _expanded_sheet_rows(
         self,
@@ -190,7 +249,7 @@ class OdsWriter:
             None: La methode modifie le fichier ODS sur disque.
         """
 
-        backup_path = f"{self.ods_path}.backup-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        backup_path = f"{self.ods_path}.backup-{datetime.now().strftime('%Y%m%d%H%M%S%f')}"
         shutil.copy2(self.ods_path, backup_path)
         tmp_path = f"{self.ods_path}.tmp"
 
@@ -202,6 +261,123 @@ class OdsWriter:
                     else:
                         target_archive.writestr(item, source_archive.read(item.filename))
         os.replace(tmp_path, self.ods_path)
+        try:
+            self.integrity_validator.validate(self.ods_path)
+        except Exception as exc:
+            shutil.copy2(backup_path, self.ods_path)
+            raise ValueError(
+                "Modification ODS annulee: le fichier modifie est invalide. "
+                f"Backup restaure depuis {backup_path}. Detail: {exc}"
+            ) from exc
+
+    def _serialized_content(self, root: ET.Element) -> bytes:
+        """Serialise le XML ODS en normalisant les prefixes de formules.
+
+        Args:
+            root (xml.etree.ElementTree.Element): Racine XML ODS a serialiser.
+
+        Returns:
+            bytes: XML encode en UTF-8 pret a ecrire dans l'archive ODS.
+        """
+
+        self._normalize_formula_attributes(root)
+        self._invalidate_formula_cached_values(root)
+        content = ET.tostring(root, encoding="utf-8", xml_declaration=True)
+        return self._ensure_formula_namespace_declarations(content)
+
+    def _normalize_formula_attributes(self, root: ET.Element) -> None:
+        """Retire les prefixes de formule ODS dupliques avant ecriture.
+
+        Args:
+            root (xml.etree.ElementTree.Element): Racine XML ODS a corriger.
+
+        Returns:
+            None: Les attributs de formule sont modifies en place si necessaire.
+        """
+
+        formula_attribute = f"{{{self.namespaces['table']}}}formula"
+        for cell in root.findall(".//table:table-cell", self.namespaces):
+            formula = cell.attrib.get(formula_attribute)
+            if formula:
+                cell.attrib[formula_attribute] = self._normalized_formula(formula)
+
+    def _normalized_formula(self, formula: str) -> str:
+        """Normalise le prefixe d'une formule ODS.
+
+        Args:
+            formula (str): Formule ODS brute.
+
+        Returns:
+            str: Formule avec un seul prefixe `of:=` ou `oooc:=`.
+        """
+
+        for prefix in ["of:=", "oooc:="]:
+            while formula.startswith(f"{prefix}{prefix}"):
+                formula = formula[len(prefix):]
+        if formula.startswith("=of:"):
+            return f"of:={formula[len('=of:'):]}"
+        if formula.startswith("=oooc:"):
+            return f"oooc:={formula[len('=oooc:'):]}"
+        return formula
+
+    def _invalidate_formula_cached_values(self, root: ET.Element) -> None:
+        """Force le recalcul des formules en supprimant leurs resultats en cache.
+
+        Args:
+            root (xml.etree.ElementTree.Element): Racine XML ODS a corriger.
+
+        Returns:
+            None: Les cellules de formule sont marquees pour recalcul.
+        """
+
+        formula_attribute = f"{{{self.namespaces['table']}}}formula"
+        recalculate_attribute = f"{{{self.namespaces['table']}}}recalculate"
+        cached_attributes = [
+            f"{{{self.namespaces['office']}}}value",
+            f"{{{self.namespaces['office']}}}date-value",
+            f"{{{self.namespaces['office']}}}time-value",
+            f"{{{self.namespaces['office']}}}boolean-value",
+            f"{{{self.namespaces['office']}}}string-value",
+            f"{{{self.namespaces['calcext']}}}value-type",
+        ]
+        for cell in root.findall(".//table:table-cell", self.namespaces):
+            if formula_attribute not in cell.attrib:
+                continue
+            cell.attrib[recalculate_attribute] = "true"
+            for attribute in cached_attributes:
+                cell.attrib.pop(attribute, None)
+            for child in list(cell):
+                cell.remove(child)
+
+    def _ensure_formula_namespace_declarations(self, content: bytes) -> bytes:
+        """Ajoute les declarations de namespaces utilisees dans les formules.
+
+        Args:
+            content (bytes): XML ODS serialise.
+
+        Returns:
+            bytes: XML avec les namespaces de formule requis.
+        """
+
+        declarations = []
+        if b"of:=" in content and b"xmlns:of=" not in content:
+            declarations.append(
+                b'xmlns:of="urn:oasis:names:tc:opendocument:xmlns:of:1.2"'
+            )
+        if b"oooc:=" in content and b"xmlns:oooc=" not in content:
+            declarations.append(b'xmlns:oooc="http://openoffice.org/2004/calc"')
+        if not declarations:
+            return content
+
+        marker = b":document-content"
+        marker_index = content.find(marker)
+        if marker_index < 0:
+            return content
+        tag_start_index = content.rfind(b"<", 0, marker_index)
+        if tag_start_index < 0:
+            return content
+        insert_index = marker_index + len(marker)
+        return content[:insert_index] + b" " + b" ".join(declarations) + content[insert_index:]
 
     def _find_stats_row_index(self, rows: list[ET.Element]) -> Optional[int]:
         """Trouve l'index de la ligne qui marque la zone de statistiques.
@@ -266,110 +442,3 @@ class OdsWriter:
             ):
                 return index
         return None
-
-    def _set_game_row_values(self, row: ET.Element, game: dict[str, Any]) -> None:
-        """Remplit les cellules d'une ligne XML avec les donnees d'un jeu.
-
-        Args:
-            row (xml.etree.ElementTree.Element): Ligne XML clonee depuis une ligne modele.
-            game (dict[str, Any]): Donnees du jeu a placer dans les colonnes F a M.
-
-        Returns:
-            None: La ligne XML est modifiee en place.
-        """
-
-        cells = self.xml_reader.expanded_cells(row)
-        while len(cells) < 13:
-            cells.append(ET.Element(f"{{{self.namespaces['table']}}}table-cell"))
-
-        values_by_index = {
-            5: ("string", game["Nom du jeu"]),
-            6: ("string", game["Studio"]),
-            7: ("date", game["Date de sortie"]),
-            8: ("date", game["Date d'achat"]),
-            9: ("string", game["Lieu d'achat"]),
-            10: ("string", game["Note"]),
-            11: ("float", game["Prix d'achat"]),
-            12: ("string", game["Version"]),
-        }
-        for index, (value_type, value) in values_by_index.items():
-            self._set_cell_value(cells[index], value_type, value)
-
-        for child in list(row):
-            row.remove(child)
-        for cell in cells:
-            row.append(cell)
-
-    def _set_cell_value(self, cell: ET.Element, value_type: str, value: Any) -> None:
-        """Ecrit une valeur dans une cellule XML ODS.
-
-        Args:
-            cell (xml.etree.ElementTree.Element): Cellule a modifier.
-            value_type (str): Type attendu, par exemple `string`, `date` ou `float`.
-            value (Any): Valeur brute a ecrire.
-
-        Returns:
-            None: La cellule XML est modifiee en place.
-        """
-
-        office_value_type = f"{{{self.namespaces['office']}}}value-type"
-        office_value = f"{{{self.namespaces['office']}}}value"
-        office_date_value = f"{{{self.namespaces['office']}}}date-value"
-        calcext_value_type = f"{{{self.namespaces['calcext']}}}value-type"
-        table_formula = f"{{{self.namespaces['table']}}}formula"
-
-        for attribute in [office_value_type, office_value, office_date_value, calcext_value_type, table_formula]:
-            cell.attrib.pop(attribute, None)
-        for child in list(cell):
-            cell.remove(child)
-
-        text_value = "" if value is None else str(value).strip()
-        if not text_value:
-            return
-
-        if value_type == "date" and self._is_iso_date(text_value):
-            cell.attrib[office_value_type] = "date"
-            cell.attrib[office_date_value] = text_value
-            cell.attrib[calcext_value_type] = "date"
-        elif value_type == "float" and self._is_number(text_value):
-            cell.attrib[office_value_type] = "float"
-            cell.attrib[office_value] = text_value.replace(",", ".")
-            cell.attrib[calcext_value_type] = "float"
-        else:
-            cell.attrib[office_value_type] = "string"
-            cell.attrib[calcext_value_type] = "string"
-
-        paragraph = ET.SubElement(cell, f"{{{self.namespaces['text']}}}p")
-        paragraph.text = text_value
-
-    def _is_iso_date(self, value: str) -> bool:
-        """Indique si une chaine respecte le format date ISO `YYYY-MM-DD`.
-
-        Args:
-            value (str): Texte a valider.
-
-        Returns:
-            bool: `True` si le texte est une date ISO valide, sinon `False`.
-        """
-
-        try:
-            datetime.strptime(value, "%Y-%m-%d")
-            return True
-        except ValueError:
-            return False
-
-    def _is_number(self, value: str) -> bool:
-        """Indique si une chaine represente un nombre.
-
-        Args:
-            value (str): Texte a valider, avec virgule ou point decimal accepte.
-
-        Returns:
-            bool: `True` si le texte est convertible en float, sinon `False`.
-        """
-
-        try:
-            float(value.replace(",", "."))
-            return True
-        except ValueError:
-            return False

@@ -76,6 +76,22 @@ class JeuxVideoApi {
   }
 
   /**
+   * Supprime un jeu d'une plateforme.
+   *
+   * @param {Object} game - Jeu identifie par sa plateforme et son nom.
+   * @returns {Promise<Object>} Objet contenant le jeu supprime.
+   */
+  static async deleteGame(game) {
+    return this.fetchJson("/collections/JeuxVideo/games", "Impossible de supprimer le jeu.", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(game),
+    });
+  }
+
+  /**
    * Supprime un jeu de la liste de souhaits.
    *
    * @param {Object} game - Jeu wishlist identifie par son nom et sa console.

@@ -16,6 +16,8 @@ class OdsNamespaces:
         "calcext": "urn:org:documentfoundation:names:experimental:calc:xmlns:calcext:1.0",
         "draw": "urn:oasis:names:tc:opendocument:xmlns:drawing:1.0",
         "office": "urn:oasis:names:tc:opendocument:xmlns:office:1.0",
+        "of": "urn:oasis:names:tc:opendocument:xmlns:of:1.2",
+        "oooc": "http://openoffice.org/2004/calc",
         "table": "urn:oasis:names:tc:opendocument:xmlns:table:1.0",
         "text": "urn:oasis:names:tc:opendocument:xmlns:text:1.0",
         "xlink": "http://www.w3.org/1999/xlink",

@@ -33,6 +33,8 @@ function PlatformDetailView({
   sortConfig,
   sortedGames,
   filteredGames,
+  deleteGameMessage,
+  deleteGameError,
   error,
   isLoadingPlatforms,
   isLoadingGames,
@@ -40,6 +42,7 @@ function PlatformDetailView({
   onOpenPlatform,
   onToggleSort,
   onColumnFiltersChange,
+  onDeleteGame,
 }) {
   /**
    * Indique si une note de jeu merite une mise en avant.
@@ -103,6 +106,8 @@ function PlatformDetailView({
         </div>
       </section>
       {error ? <p className="error">{error}</p> : null}
+      {deleteGameError ? <p className="error">{deleteGameError}</p> : null}
+      {deleteGameMessage ? <p className="success">{deleteGameMessage}</p> : null}
 
       <div className="controls">
         <label htmlFor="platform">Plateforme :</label>
@@ -140,6 +145,20 @@ function PlatformDetailView({
           getRowClassName={(game) =>
             isTopRatedGame(game.Note) ? "topRatedGameRow" : ""
           }
+          renderRowActions={(game) => (
+            <button
+              className="wishlistIconButton dangerIconButton"
+              type="button"
+              aria-label={`Supprimer ${game["Nom du jeu"] || "ce jeu"} de la plateforme`}
+              title="Supprimer de la plateforme"
+              onClick={() => onDeleteGame(game)}
+            >
+              <svg aria-hidden="true" className="wishlistActionIcon" viewBox="0 0 24 24">
+                <path d="M9 3h6l1 2h4v2H4V5h4l1-2Z" />
+                <path d="M6 9h12l-1 12H7L6 9Zm4 2v8h2v-8h-2Zm4 0v8h2v-8h-2Z" />
+              </svg>
+            </button>
+          )}
         />
       ) : null}
 

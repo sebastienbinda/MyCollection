@@ -79,6 +79,7 @@ class FakeWriter:
         """
 
         self.added_games = []
+        self.deleted_games = []
         self.deleted_wishlist_games = []
 
     def add_game(self, platform, game):
@@ -93,6 +94,19 @@ class FakeWriter:
         """
 
         self.added_games.append((platform, game))
+
+    def delete_game(self, platform, game):
+        """Enregistre la suppression d'un jeu sans ecrire de fichier.
+
+        Args:
+            platform (str): Plateforme cible.
+            game (dict[str, object]): Donnees du jeu.
+
+        Returns:
+            None: Les donnees sont conservees en memoire.
+        """
+
+        self.deleted_games.append((platform, game))
 
     def delete_wishlist_game(self, game_name, console):
         """Enregistre la suppression wishlist sans ecrire de fichier.
@@ -254,6 +268,42 @@ class JeuVideoServiceTest(unittest.TestCase):
             [("Chrono Trigger", "Switch 2")],
             self.service.writer.deleted_wishlist_games,
         )
+
+    def test_delete_game_writes_clean_payload_and_resets_cache(self):
+        """Verifie la suppression d'un jeu et l'invalidation du cache.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident le comportement attendu.
+        """
+
+        item = self.service.delete_game(
+            {
+                "platform": "Switch",
+                "Nom du jeu": " Mario Kart ",
+                "Studio": " Nintendo ",
+            }
+        )
+
+        self.assertEqual("Switch", item["Plateforme"])
+        self.assertEqual("Mario Kart", item["Nom du jeu"])
+        self.assertEqual(1, self.service.cache.reset_count)
+        self.assertEqual("Nintendo", self.service.writer.deleted_games[0][1]["Studio"])
+
+    def test_delete_game_rejects_missing_name(self):
+        """Verifie la validation du nom avant suppression.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident l'erreur attendue.
+        """
+
+        with self.assertRaises(ValueError):
+            self.service.delete_game({"platform": "Switch"})
 
     def test_delete_wishlist_game_requires_console(self):
         """Verifie la validation des donnees de suppression wishlist.
