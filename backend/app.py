@@ -15,10 +15,12 @@ import os
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 from models import CollectionTypes, Film
-from services import JeuVideoService
+from services import AuthGuard, AuthTokenService, JeuVideoService, RouteDiscoveryService
 
 app = Flask(__name__)
 CORS(app)
+auth_token_service = AuthTokenService()
+auth_guard = AuthGuard(auth_token_service)
 
 
 COLLECTION_ITEMS = {
@@ -28,6 +30,37 @@ COLLECTION_ITEMS = {
         Film(id=3, name="Le Seigneur des Anneaux"),
     ],
 }
+
+
+@app.post("/auth/token")
+def issue_auth_token():
+    """Retourne un token Bearer compatible OAuth2 pour les routes protegees.
+
+    Args:
+        Aucun.
+
+    Form or JSON Body:
+        username (str): Identifiant backend, ou `client_id` en flux client credentials.
+        password (str): Mot de passe backend, ou `client_secret` en flux client credentials.
+
+    Returns:
+        tuple[flask.Response, int] | flask.Response: Token OAuth2 ou erreur JSON 401.
+    """
+
+    payload = request.get_json(silent=True) or request.form
+    username = payload.get("username") or payload.get("client_id") or ""
+    password = payload.get("password") or payload.get("client_secret") or ""
+
+    try:
+        token_response = auth_token_service.issue_token(username, password)
+        return jsonify(token_response)
+    except ValueError as exc:
+        return (
+            jsonify({"error": str(exc)}),
+            401,
+            {"WWW-Authenticate": 'Bearer realm="CloudCollectionApp"'},
+        )
+
 
 @app.get("/api/time")
 def get_time():
@@ -46,6 +79,21 @@ def get_time():
             "server_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
     )
+
+
+@app.get("/api/routes")
+def list_accessible_routes():
+    """Liste les routes backend et indique celles qui exigent un token.
+
+    Args:
+        Aucun.
+
+    Returns:
+        flask.Response: Reponse JSON contenant `routes` (list[dict]).
+    """
+
+    routes = RouteDiscoveryService(app).list_routes()
+    return jsonify({"routes": routes})
 
 
 @app.get("/collections/<collection_type>/search")
@@ -162,6 +210,7 @@ def get_jeux_video_home():
 
 
 @app.post("/collections/JeuxVideo/cache/reset")
+@auth_guard.require_token
 def reset_jeux_video_cache():
     """Vide le cache backend des donnees lues depuis le fichier ODS.
 
@@ -229,6 +278,7 @@ def search_jeux_video_games():
 
 
 @app.post("/collections/JeuxVideo/games")
+@auth_guard.require_token
 def add_jeux_video_game():
     """Ajoute un jeu dans l'onglet ODS correspondant a sa plateforme.
 
@@ -255,6 +305,7 @@ def add_jeux_video_game():
 
 
 @app.delete("/collections/JeuxVideo/games")
+@auth_guard.require_token
 def delete_jeux_video_game():
     """Supprime un jeu dans l'onglet ODS de sa plateforme.
 
@@ -281,6 +332,7 @@ def delete_jeux_video_game():
 
 
 @app.delete("/collections/JeuxVideo/wishlist/games")
+@auth_guard.require_token
 def delete_jeux_video_wishlist_game():
     """Supprime un jeu dans l'onglet ODS `Liste de souhaits`.
 

@@ -50,6 +50,9 @@ class AppRouting {
    * @returns {"home"|"games"|"addGame"} Identifiant de vue a afficher.
    */
   static getViewFromUrl() {
+    if (window.location.pathname === "/auth") {
+      return "auth";
+    }
     if (window.location.pathname === "/add-game") {
       return "addGame";
     }

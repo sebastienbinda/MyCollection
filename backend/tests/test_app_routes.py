@@ -132,6 +132,56 @@ class AppRoutesTest(unittest.TestCase):
 
         app_module.JeuVideoService = self.original_service
 
+    def get_auth_headers(self):
+        """Construit un header Bearer valide pour les routes protegees.
+
+        Args:
+            Aucun.
+
+        Returns:
+            dict[str, str]: En-tetes HTTP contenant le token d'authentification.
+        """
+
+        token = app_module.auth_token_service.create_access_token("admin")
+        return {"Authorization": f"Bearer {token}"}
+
+    def test_auth_token_route_returns_bearer_token(self):
+        """Verifie la generation d'un token OAuth2 Bearer.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+
+        response = self.client.post(
+            "/auth/token",
+            json={"username": "admin", "password": "change-me"},
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("Bearer", response.get_json()["token_type"])
+        self.assertTrue(response.get_json()["access_token"])
+
+    def test_auth_token_route_rejects_invalid_credentials(self):
+        """Verifie le refus des identifiants invalides.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+
+        response = self.client.post(
+            "/auth/token",
+            json={"username": "admin", "password": "bad-password"},
+        )
+
+        self.assertEqual(401, response.status_code)
+        self.assertIn("invalides", response.get_json()["error"])
+
     def test_platforms_route_returns_platforms(self):
         """Verifie l'endpoint de liste des plateformes.
 
@@ -147,6 +197,32 @@ class AppRoutesTest(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(["Switch", "Playstation"], response.get_json()["platforms"])
 
+    def test_routes_route_lists_public_and_protected_routes(self):
+        """Verifie le catalogue des routes et leurs contraintes d'authentification.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident le contrat de decouverte des routes.
+        """
+
+        response = self.client.get("/api/routes")
+        routes = response.get_json()["routes"]
+        routes_by_key = {
+            (route["path"], tuple(route["methods"])): route
+            for route in routes
+        }
+
+        self.assertEqual(200, response.status_code)
+        self.assertFalse(routes_by_key[("/api/routes", ("GET",))]["requires_auth"])
+        self.assertFalse(routes_by_key[("/collections/JeuxVideo/platforms", ("GET",))]["requires_auth"])
+        self.assertTrue(routes_by_key[("/collections/JeuxVideo/games", ("POST",))]["requires_auth"])
+        self.assertEqual(
+            ["Bearer"],
+            routes_by_key[("/collections/JeuxVideo/games", ("POST",))]["auth_schemes"],
+        )
+
     def test_cache_reset_route_returns_removed_entries(self):
         """Verifie l'endpoint de reset du cache.
 
@@ -157,10 +233,28 @@ class AppRoutesTest(unittest.TestCase):
             None: Les assertions valident la reponse HTTP.
         """
 
-        response = self.client.post("/collections/JeuxVideo/cache/reset")
+        response = self.client.post(
+            "/collections/JeuxVideo/cache/reset",
+            headers=self.get_auth_headers(),
+        )
 
         self.assertEqual(200, response.status_code)
         self.assertEqual(2, response.get_json()["removed_entries"])
+
+    def test_cache_reset_route_requires_authentication(self):
+        """Verifie que le reset du cache exige un token.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+
+        response = self.client.post("/collections/JeuxVideo/cache/reset")
+
+        self.assertEqual(401, response.status_code)
+        self.assertIn("Bearer", response.get_json()["error"])
 
     def test_add_game_route_returns_created_item(self):
         """Verifie l'endpoint d'ajout d'un jeu.
@@ -175,10 +269,30 @@ class AppRoutesTest(unittest.TestCase):
         response = self.client.post(
             "/collections/JeuxVideo/games",
             json={"platform": "Switch", "Nom du jeu": "Metroid"},
+            headers=self.get_auth_headers(),
         )
 
         self.assertEqual(201, response.status_code)
         self.assertEqual("Metroid", response.get_json()["item"]["Nom du jeu"])
+
+    def test_add_game_route_rejects_invalid_token(self):
+        """Verifie que l'ajout d'un jeu refuse un token invalide.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+
+        response = self.client.post(
+            "/collections/JeuxVideo/games",
+            json={"platform": "Switch", "Nom du jeu": "Metroid"},
+            headers={"Authorization": "Bearer invalid-token"},
+        )
+
+        self.assertEqual(401, response.status_code)
+        self.assertIn("invalide", response.get_json()["error"])
 
     def test_add_game_route_returns_validation_error(self):
         """Verifie la propagation des erreurs de validation.
@@ -190,7 +304,11 @@ class AppRoutesTest(unittest.TestCase):
             None: Les assertions valident la reponse HTTP.
         """
 
-        response = self.client.post("/collections/JeuxVideo/games", json={"platform": "Switch"})
+        response = self.client.post(
+            "/collections/JeuxVideo/games",
+            json={"platform": "Switch"},
+            headers=self.get_auth_headers(),
+        )
 
         self.assertEqual(400, response.status_code)
         self.assertIn("obligatoire", response.get_json()["error"])
@@ -208,6 +326,7 @@ class AppRoutesTest(unittest.TestCase):
         response = self.client.delete(
             "/collections/JeuxVideo/wishlist/games",
             json={"Nom du jeu": "Chrono Trigger", "Console": "Switch 2"},
+            headers=self.get_auth_headers(),
         )
 
         self.assertEqual(200, response.status_code)
@@ -226,6 +345,7 @@ class AppRoutesTest(unittest.TestCase):
         response = self.client.delete(
             "/collections/JeuxVideo/games",
             json={"platform": "Switch", "Nom du jeu": "Metroid"},
+            headers=self.get_auth_headers(),
         )
 
         self.assertEqual(200, response.status_code)
@@ -241,7 +361,11 @@ class AppRoutesTest(unittest.TestCase):
             None: Les assertions valident la reponse HTTP.
         """
 
-        response = self.client.delete("/collections/JeuxVideo/games", json={"platform": "Switch"})
+        response = self.client.delete(
+            "/collections/JeuxVideo/games",
+            json={"platform": "Switch"},
+            headers=self.get_auth_headers(),
+        )
 
         self.assertEqual(400, response.status_code)
         self.assertIn("obligatoire", response.get_json()["error"])
@@ -259,6 +383,7 @@ class AppRoutesTest(unittest.TestCase):
         response = self.client.delete(
             "/collections/JeuxVideo/wishlist/games",
             json={"Nom du jeu": "Chrono Trigger"},
+            headers=self.get_auth_headers(),
         )
 
         self.assertEqual(400, response.status_code)

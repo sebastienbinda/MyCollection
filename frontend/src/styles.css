@@ -90,13 +90,25 @@ button:disabled {
 }
 
 .secondaryButton,
-.backButton {
+.backButton,
+.buttonLink {
   background: #111827;
 }
 
 .secondaryButton:hover:not(:disabled),
-.backButton:hover:not(:disabled) {
+.backButton:hover:not(:disabled),
+.buttonLink:hover {
   background: #374151;
+}
+
+.buttonLink {
+  border-radius: 6px;
+  box-sizing: border-box;
+  color: #ffffff;
+  display: inline-block;
+  font-weight: 700;
+  padding: 0.65rem 0.9rem;
+  text-decoration: none;
 }
 
 .backButton {
@@ -105,6 +117,7 @@ button:disabled {
 
 input[type="text"],
 input[type="search"],
+input[type="password"],
 input[type="date"],
 input[type="number"] {
   width: 100%;

@@ -10,6 +10,38 @@
  * Auteurs : Codex et Binda Sébastien
  */
 class JeuxVideoApi {
+  static authTokenStorageKey = "cloudCollectionAccessToken";
+  static authChangeEventName = "cloudcollectionauthchange";
+
+  /**
+   * Demande un token Bearer au backend avec les identifiants fournis.
+   *
+   * @param {string} username - Identifiant d'authentification.
+   * @param {string} password - Mot de passe d'authentification.
+   * @returns {Promise<Object>} Reponse OAuth2 contenant le token.
+   */
+  static async authenticate(username, password) {
+    const data = await this.fetchJson("/auth/token", "Authentification impossible.", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, password }),
+    });
+    this.storeAccessToken(data.access_token || "");
+    return data;
+  }
+
+  /**
+   * Charge le catalogue des routes accessibles expose par le backend.
+   *
+   * @param {void} Aucun - Appelle l'API backend.
+   * @returns {Promise<Object>} Objet contenant `routes`.
+   */
+  static async fetchRoutes() {
+    return this.fetchJson("/api/routes", "Impossible de recuperer les routes backend.");
+  }
+
   /**
    * Charge les statistiques d'accueil.
    *
@@ -70,6 +102,7 @@ class JeuxVideoApi {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...this.getAuthorizationHeaders(),
       },
       body: JSON.stringify(gameForm),
     });
@@ -86,6 +119,7 @@ class JeuxVideoApi {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
+        ...this.getAuthorizationHeaders(),
       },
       body: JSON.stringify(game),
     });
@@ -105,6 +139,7 @@ class JeuxVideoApi {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
+          ...this.getAuthorizationHeaders(),
         },
         body: JSON.stringify({
           "Nom du jeu": game["Nom du jeu"],
@@ -136,7 +171,75 @@ class JeuxVideoApi {
   static async resetCache() {
     return this.fetchJson("/collections/JeuxVideo/cache/reset", "Impossible de reinitialiser le cache.", {
       method: "POST",
+      headers: this.getAuthorizationHeaders(),
     });
+  }
+
+  /**
+   * Retourne le token Bearer stocke cote navigateur.
+   *
+   * @param {void} Aucun - Lit `localStorage` si disponible.
+   * @returns {string} Token d'acces ou chaine vide.
+   */
+  static getAccessToken() {
+    if (typeof window === "undefined" || !window.localStorage) {
+      return "";
+    }
+    return window.localStorage.getItem(this.authTokenStorageKey) || "";
+  }
+
+  /**
+   * Stocke le token Bearer et notifie l'application.
+   *
+   * @param {string} accessToken - Token a stocker.
+   * @returns {void} Met a jour `localStorage`.
+   */
+  static storeAccessToken(accessToken) {
+    if (typeof window === "undefined" || !window.localStorage) {
+      return;
+    }
+    window.localStorage.setItem(this.authTokenStorageKey, accessToken);
+    window.dispatchEvent(new Event(this.authChangeEventName));
+  }
+
+  /**
+   * Supprime le token Bearer et notifie l'application.
+   *
+   * @param {void} Aucun - Modifie `localStorage`.
+   * @returns {void} Supprime le token courant.
+   */
+  static clearAccessToken() {
+    if (typeof window === "undefined" || !window.localStorage) {
+      return;
+    }
+    window.localStorage.removeItem(this.authTokenStorageKey);
+    window.dispatchEvent(new Event(this.authChangeEventName));
+  }
+
+  /**
+   * Confirme la deconnexion puis supprime le token local.
+   *
+   * @param {void} Aucun - Utilise `window.confirm`.
+   * @returns {void} Supprime le token si l'utilisateur confirme.
+   */
+  static confirmAndClearAccessToken() {
+    if (window.confirm("Confirmer la deconnexion ?")) {
+      JeuxVideoApi.clearAccessToken();
+    }
+  }
+
+  /**
+   * Construit les en-tetes d'autorisation si un token existe.
+   *
+   * @param {void} Aucun - Utilise le token stocke.
+   * @returns {Object} En-tetes HTTP d'authentification.
+   */
+  static getAuthorizationHeaders() {
+    const accessToken = this.getAccessToken();
+    if (!accessToken) {
+      return {};
+    }
+    return { Authorization: `Bearer ${accessToken}` };
   }
 
   /**
@@ -149,11 +252,26 @@ class JeuxVideoApi {
    */
   static async fetchJson(url, fallbackMessage, options = {}) {
     const response = await fetch(url, options);
-    const data = await response.json();
+    const data = await this.parseJsonResponse(response, fallbackMessage);
     if (!response.ok) {
       throw new Error(data.error || fallbackMessage);
     }
     return data;
+  }
+
+  /**
+   * Decode une reponse JSON et protege contre les reponses HTML de proxy.
+   *
+   * @param {Response} response - Reponse HTTP retournee par `fetch`.
+   * @param {string} fallbackMessage - Message d'erreur si le JSON est absent.
+   * @returns {Promise<Object>} Corps JSON decode.
+   */
+  static async parseJsonResponse(response, fallbackMessage) {
+    try {
+      return await response.json();
+    } catch (error) {
+      throw new Error(fallbackMessage);
+    }
   }
 }
 

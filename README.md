@@ -128,6 +128,55 @@ Les images affichees dans l'interface sont extraites directement des images emba
 
 ## API Principale
 
+### Authentification
+
+Les endpoints qui modifient les donnees exigent un token Bearer OAuth2 :
+
+```http
+POST /auth/token
+Content-Type: application/json
+```
+
+Exemple :
+
+```json
+{
+  "username": "admin",
+  "password": "change-me"
+}
+```
+
+Configurer les valeurs avec `AUTH_USERNAME`, `AUTH_PASSWORD`, `AUTH_SECRET_KEY` et
+`AUTH_TOKEN_TTL_SECONDS`. La reponse contient `access_token`, `token_type` et
+`expires_in`. Les appels de mise a jour doivent ensuite envoyer :
+
+```http
+Authorization: Bearer <access_token>
+```
+
+### Routes Disponibles
+
+```http
+GET /api/routes
+```
+
+Retourne les routes backend et indique si elles sont publiques ou protegees :
+
+```json
+{
+  "routes": [
+    {
+      "path": "/collections/JeuxVideo/games",
+      "endpoint": "add_jeux_video_game",
+      "methods": ["POST"],
+      "requires_auth": true,
+      "access": "bearer_token",
+      "auth_schemes": ["Bearer"]
+    }
+  ]
+}
+```
+
 ### Plateformes
 
 ```http
@@ -181,6 +230,7 @@ Retourne l'image embarquee dans l'onglet de la plateforme.
 ```http
 POST /collections/JeuxVideo/games
 Content-Type: application/json
+Authorization: Bearer <access_token>
 ```
 
 Exemple :

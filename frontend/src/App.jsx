@@ -10,14 +10,11 @@
  * Auteurs : Codex et Binda Sébastien
  */
 import { useEffect, useState } from "react";
-import {
-  filterGames,
-  getStudioCount,
-  sortGames,
-} from "./collectionUtils";
+import { filterGames, getStudioCount, sortGames } from "./collectionUtils";
 import AppRouting from "./appRouting";
 import AppFrame from "./components/AppFrame";
 import AppViewSwitch from "./components/AppViewSwitch";
+import useBackendActionPermissions from "./hooks/useBackendActionPermissions";
 import JeuxVideoApi from "./services/JeuxVideoApi";
 const initialGameForm = AppRouting.createInitialGameForm();
 /**
@@ -51,6 +48,7 @@ function App() {
   const [deleteGameError, setDeleteGameError] = useState("");
   const [cacheResetMessage, setCacheResetMessage] = useState("");
   const [cacheResetError, setCacheResetError] = useState("");
+  const actionPermissions = useBackendActionPermissions();
   const [isLoadingHome, setIsLoadingHome] = useState(true);
   const [isLoadingPlatforms, setIsLoadingPlatforms] = useState(true);
   const [isLoadingGames, setIsLoadingGames] = useState(false);
@@ -345,6 +343,7 @@ function App() {
     event.preventDefault();
     setAddGameMessage("");
     setAddGameError("");
+    if (!actionPermissions.canAddGame) return;
 
     try {
       setIsAddingGame(true);
@@ -488,7 +487,8 @@ function App() {
         selectedPlatformStats,
         studioCount: getStudioCount(namedGames),
         deleteGameMessage, deleteGameError, isLoadingPlatforms,
-        openAddGamePage, openWishlist, openPlatform, setHomeSearchQuery,
+        actionPermissions,
+        openAddGamePage, openWishlist, openPlatform, setHomeSearchQuery, logout: JeuxVideoApi.confirmAndClearAccessToken,
         searchGamesByName, closeHomeSearch, resetOdsCache, goHome,
         submitNewGame, updateGameFormValue, addWishlistGameToPlatform,
         deleteWishlistGame, toggleSort, setColumnFilters, deletePlatformGame,

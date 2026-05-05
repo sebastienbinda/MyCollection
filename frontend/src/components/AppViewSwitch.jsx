@@ -13,6 +13,7 @@
  * Description : routeur de vues React pour l'application jeux video.
  */
 import AddGameView from "./AddGameView";
+import AuthView from "./AuthView";
 import HomeView from "./HomeView";
 import PlatformDetailView from "./PlatformDetailView";
 import WishlistView from "./WishlistView";
@@ -34,6 +35,10 @@ class AppViewSwitch {
 
     if (props.currentView === "addGame") {
       return this.renderAddGame(props);
+    }
+
+    if (props.currentView === "auth") {
+      return this.renderAuth(props);
     }
 
     if (props.currentView === "wishlist") {
@@ -65,7 +70,11 @@ class AppViewSwitch {
         cacheResetMessage={props.cacheResetMessage}
         cacheResetError={props.cacheResetError}
         isResettingCache={props.isResettingCache}
+        canAddGame={props.actionPermissions.canAddGame}
+        canResetCache={props.actionPermissions.canResetCache}
+        isAuthenticated={props.actionPermissions.isAuthenticated}
         onAddGame={props.openAddGamePage}
+        onLogout={props.logout}
         onOpenWishlist={props.openWishlist}
         onOpenPlatform={props.openPlatform}
         onSearchQueryChange={props.setHomeSearchQuery}
@@ -91,9 +100,26 @@ class AppViewSwitch {
         addGameError={props.addGameError}
         addGameMessage={props.addGameMessage}
         isAddingGame={props.isAddingGame}
+        canAddGame={props.actionPermissions.canAddGame}
         onBack={props.goHome}
         onSubmit={props.submitNewGame}
         onFieldChange={props.updateGameFormValue}
+      />
+    );
+  }
+
+  /**
+   * Rend la page d'authentification.
+   *
+   * @param {Object} props - Etat et callbacks de connexion.
+   * @returns {import("react").JSX.Element} Vue d'authentification.
+   */
+  static renderAuth(props) {
+    return (
+      <AuthView
+        isAuthenticated={props.actionPermissions.isAuthenticated}
+        onAuthenticated={props.goHome}
+        onBack={props.goHome}
       />
     );
   }
@@ -117,6 +143,8 @@ class AppViewSwitch {
         error={props.error}
         isLoadingGames={props.isLoadingGames}
         platforms={props.platforms}
+        canAddGame={props.actionPermissions.canAddGame}
+        canDeleteWishlistGame={props.actionPermissions.canDeleteWishlistGame}
         onBack={props.goHome}
         onAddWishlistGameToPlatform={props.addWishlistGameToPlatform}
         onDeleteWishlistGame={props.deleteWishlistGame}
@@ -151,6 +179,7 @@ class AppViewSwitch {
         error={props.error}
         isLoadingPlatforms={props.isLoadingPlatforms}
         isLoadingGames={props.isLoadingGames}
+        canDeleteGame={props.actionPermissions.canDeleteGame}
         onBack={props.goHome}
         onOpenPlatform={props.openPlatform}
         onToggleSort={props.toggleSort}

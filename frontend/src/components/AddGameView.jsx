@@ -22,6 +22,7 @@ function AddGameView({
   addGameError,
   addGameMessage,
   isAddingGame,
+  canAddGame,
   onBack,
   onSubmit,
   onFieldChange,
@@ -153,9 +154,11 @@ function AddGameView({
           <button type="button" className="secondaryButton" onClick={onBack}>
             Annuler
           </button>
-          <button type="submit" disabled={isAddingGame}>
-            {isAddingGame ? "Ajout en cours..." : "Ajouter le jeu"}
-          </button>
+          {canAddGame ? (
+            <button type="submit" disabled={isAddingGame}>
+              {isAddingGame ? "Ajout en cours..." : "Ajouter le jeu"}
+            </button>
+          ) : null}
         </div>
       </form>
     </main>

@@ -137,7 +137,7 @@
   margin-top: 0.15rem;
 }
 
-.hero {
+.pageHeader {
   align-items: flex-end;
   background: linear-gradient(135deg, #ffffff 0%, #e8f0ff 56%, #ecfdf5 100%);
   border: 1px solid #dbe4f0;
@@ -148,22 +148,73 @@
   justify-content: space-between;
   margin-bottom: 1.5rem;
   padding: 2rem;
+  position: relative;
 }
 
-.hero h1 {
+.pageHeader h1 {
   font-size: clamp(2rem, 5vw, 3.8rem);
   line-height: 1;
   margin-bottom: 0.45rem;
 }
 
-.heroActions {
+.pageHeaderActionArea {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  justify-content: flex-end;
+}
+
+.pageHeaderActions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem;
   justify-content: flex-end;
 }
 
-.heroDateSummary {
+.authButtonLink {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #0f766e;
+  border-radius: 6px;
+  box-sizing: border-box;
+  color: #0f766e;
+  gap: 0.45rem;
+  display: inline-flex;
+  font-weight: 800;
+  justify-content: center;
+  min-height: 2.45rem;
+  min-width: 2.45rem;
+  padding: 0.62rem 0.9rem;
+  text-decoration: none;
+}
+
+.authButtonLink:hover {
+  background: #ccfbf1;
+}
+
+.authButtonConnected {
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.authButtonConnected:hover {
+  background: #115e59;
+}
+
+.authStatusIcon {
+  fill: currentColor;
+  height: 1.1rem;
+  width: 1.1rem;
+}
+
+.pageHeaderAuthButton {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+}
+
+.pageHeaderDateSummary {
   color: #334155;
   display: flex;
   flex-wrap: wrap;
@@ -379,12 +430,12 @@
 }
 
 @media (max-width: 860px) {
-  .hero {
+  .pageHeader {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .heroActions {
+  .pageHeaderActions {
     justify-content: flex-start;
   }
 

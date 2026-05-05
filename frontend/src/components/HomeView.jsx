@@ -20,7 +20,11 @@ function HomeView({
   cacheResetMessage,
   cacheResetError,
   isResettingCache,
+  canAddGame,
+  canResetCache,
+  isAuthenticated,
   onAddGame,
+  onLogout,
   onOpenWishlist,
   onOpenPlatform,
   onSearchQueryChange,
@@ -36,39 +40,70 @@ function HomeView({
   }, null);
   return (
     <main className="appShell">
-      <header className="hero">
+      <header className="pageHeader">
+        {isAuthenticated ? (
+          <button
+            className="authButtonLink pageHeaderAuthButton authButtonConnected"
+            type="button"
+            aria-label="Se deconnecter"
+            title="Se deconnecter"
+            onClick={onLogout}
+          >
+            <svg aria-hidden="true" className="authStatusIcon" viewBox="0 0 24 24">
+              <path d="M12 2a5 5 0 0 1 5 5v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v3h6V7a3 3 0 0 0-3-3Zm1 11.73A2 2 0 1 0 11 15.73V19h2v-3.27Z" />
+            </svg>
+          </button>
+        ) : (
+          <a
+            className="authButtonLink pageHeaderAuthButton"
+            href="/auth"
+            aria-label="Connexion"
+            title="Connexion"
+          >
+            <svg aria-hidden="true" className="authStatusIcon" viewBox="0 0 24 24">
+              <path d="M12 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 12c4.42 0 8 2.24 8 5v2H4v-2c0-2.76 3.58-5 8-5Z" />
+            </svg>
+            <span>Connexion</span>
+          </a>
+        )}
         <div>
           <p className="eyebrow">Collection personnelle</p>
           <h1>{homeStats?.title || "Ma collection"}</h1>
-          <p className="heroDateSummary">
+          <p className="pageHeaderDateSummary">
             <span>Premier jeu : {formatCellValue("Date", homeStats?.first_game_date)}</span>
             <span>Dernier jeu : {formatCellValue("Date", homeStats?.last_game_date)}</span>
           </p>
           <p className="subtitle">Jeux, plateformes et statistiques essentielles.</p>
         </div>
-        <div className="heroActions">
-          <button type="button" onClick={onAddGame} disabled={platforms.length === 0}>
-            Ajouter un jeu
-          </button>
-          <button className="secondaryButton" type="button" onClick={onOpenWishlist}>
-            Liste de souhaits
-          </button>
-          <button
-            className="secondaryButton"
-            type="button"
-            onClick={onResetCache}
-            disabled={isResettingCache}
-          >
-            {isResettingCache ? "Reset..." : "Reset cache"}
-          </button>
-          <button
-            className="secondaryButton"
-            type="button"
-            onClick={() => onOpenPlatform(selectedPlatform || platforms[0] || "")}
-            disabled={platforms.length === 0}
-          >
-            Voir les jeux
-          </button>
+        <div className="pageHeaderActionArea">
+          <div className="pageHeaderActions">
+            {canAddGame ? (
+              <button type="button" onClick={onAddGame} disabled={platforms.length === 0}>
+                Ajouter un jeu
+              </button>
+            ) : null}
+            <button className="secondaryButton" type="button" onClick={onOpenWishlist}>
+              Liste de souhaits
+            </button>
+            {canResetCache ? (
+              <button
+                className="secondaryButton"
+                type="button"
+                onClick={onResetCache}
+                disabled={isResettingCache}
+              >
+                {isResettingCache ? "Reset..." : "Reset cache"}
+              </button>
+            ) : null}
+            <button
+              className="secondaryButton"
+              type="button"
+              onClick={() => onOpenPlatform(selectedPlatform || platforms[0] || "")}
+              disabled={platforms.length === 0}
+            >
+              Voir les jeux
+            </button>
+          </div>
         </div>
       </header>
 

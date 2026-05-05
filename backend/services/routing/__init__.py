@@ -5,13 +5,12 @@
 #  \____|_|\___/ \__,_|\__,_|\____\___/|_|_|\___|\___|\__|_|\___/|_| |_|\___/| .__/| .__/
 #                                                                            |_|   |_|
 # Projet : CloudCollectionApp
-# Date de creation : 2026-05-03
+# Date de creation : 2026-05-05
 # Auteurs : Codex et Binda Sébastien
+# Licence : Apache 2.0
 #
-"""Exports publics des services backend."""
+# Description : exports des services de decouverte des routes backend.
 
-from .auth import AuthGuard, AuthTokenService
-from .jeux_video import JeuVideoService
-from .routing import RouteDiscoveryService
+from .route_discovery_service import RouteDiscoveryService
 
-__all__ = ["AuthGuard", "AuthTokenService", "JeuVideoService", "RouteDiscoveryService"]
+__all__ = ["RouteDiscoveryService"]

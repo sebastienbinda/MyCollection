@@ -5,13 +5,13 @@
 #  \____|_|\___/ \__,_|\__,_|\____\___/|_|_|\___|\___|\__|_|\___/|_| |_|\___/| .__/| .__/
 #                                                                            |_|   |_|
 # Projet : CloudCollectionApp
-# Date de creation : 2026-05-03
+# Date de creation : 2026-05-05
 # Auteurs : Codex et Binda Sébastien
+# Licence : Apache 2.0
 #
-"""Exports publics des services backend."""
+# Description : exports des utilitaires d'authentification backend.
 
-from .auth import AuthGuard, AuthTokenService
-from .jeux_video import JeuVideoService
-from .routing import RouteDiscoveryService
+from .auth_guard import AuthGuard
+from .auth_token_service import AuthTokenService
 
-__all__ = ["AuthGuard", "AuthTokenService", "JeuVideoService", "RouteDiscoveryService"]
+__all__ = ["AuthGuard", "AuthTokenService"]

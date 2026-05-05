@@ -22,14 +22,18 @@ export default defineConfig(() => {
     server: {
       port: frontendPort,
       proxy: {
+        "/auth/token": {
+          target: `http://${backendHost}:${backendPort}`,
+          changeOrigin: true,
+        },
         "/api": {
           target: `http://${backendHost}:${backendPort}`,
           changeOrigin: true,
         },
-      "/collections": {
-        target: `http://${backendHost}:${backendPort}`,
-        changeOrigin: true,
-      },
+        "/collections": {
+          target: `http://${backendHost}:${backendPort}`,
+          changeOrigin: true,
+        },
       },
     },
   };
