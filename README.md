@@ -146,9 +146,24 @@ Exemple :
 }
 ```
 
-Configurer les valeurs avec `AUTH_USERNAME`, `AUTH_PASSWORD`, `AUTH_SECRET_KEY` et
-`AUTH_TOKEN_TTL_SECONDS`. La reponse contient `access_token`, `token_type` et
-`expires_in`. Les appels de mise a jour doivent ensuite envoyer :
+Configurer les valeurs avec `AUTH_USERNAME`, `AUTH_PASSWORD_ENCRYPTED`,
+`AUTH_SECRET_KEY_ENCRYPTED`, `AUTH_ENV_ENCRYPTION_KEY` et `AUTH_TOKEN_TTL_SECONDS`.
+Les anciennes variables `AUTH_PASSWORD` et `AUTH_SECRET_KEY` restent acceptees
+en secours local, mais le fichier `.env` doit utiliser les valeurs chiffrees.
+
+Generer un nouveau mot de passe, une nouvelle cle HMAC et leurs valeurs chiffrees :
+
+```bash
+backend/.venv/bin/python scripts/generate_auth_env.py
+```
+
+Reporter ensuite `AUTH_ENV_ENCRYPTION_KEY`, `AUTH_PASSWORD_ENCRYPTED` et
+`AUTH_SECRET_KEY_ENCRYPTED` dans `docker/.env`. La sortie affiche aussi
+`GENERATED_AUTH_PASSWORD`, qui est le mot de passe a saisir dans l'ecran
+d'authentification.
+
+La reponse contient `access_token`, `token_type` et `expires_in`. Les appels de
+mise a jour doivent ensuite envoyer :
 
 ```http
 Authorization: Bearer <access_token>

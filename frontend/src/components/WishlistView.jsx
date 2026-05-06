@@ -15,14 +15,13 @@
 import { Component } from "react";
 import { formatCellValue, formatNumber } from "../collectionUtils";
 import WishlistTransferService from "../services/WishlistTransferService";
+import EditWishlistDialog from "./EditWishlistDialog";
 import GameTable from "./GameTable";
-
 /**
  * Vue dediee a l'onglet ODS `Liste de souhaits`.
  */
 class WishlistView extends Component {
   transferService = new WishlistTransferService();
-
   state = {
     transferError: "",
     transferForm: {
@@ -35,7 +34,6 @@ class WishlistView extends Component {
     purchaseStatusFilter: "all",
     isTransferringGame: false,
   };
-
   /**
    * Filtre les jeux selon leur statut d'achat wishlist.
    *
@@ -44,18 +42,14 @@ class WishlistView extends Component {
    */
   filterGamesByPurchaseStatus(games) {
     const { purchaseStatusFilter } = this.state;
-
     if (purchaseStatusFilter === "pending") {
       return games.filter((game) => this.transferService.hasPurchaseDate(game));
     }
-
     if (purchaseStatusFilter === "wishlist") {
       return games.filter((game) => !this.transferService.hasPurchaseDate(game));
     }
-
     return games;
   }
-
   /**
    * Retire les lignes wishlist sans nom de jeu.
    *
@@ -65,7 +59,6 @@ class WishlistView extends Component {
   filterNamedGames(games) {
     return games.filter((game) => this.transferService.hasTextValue(game["Nom du jeu"]));
   }
-
   /**
    * Met a jour le filtre de statut d'achat de la wishlist.
    *
@@ -75,7 +68,6 @@ class WishlistView extends Component {
   updatePurchaseStatusFilter(value) {
     this.setState({ purchaseStatusFilter: value });
   }
-
   /**
    * Ouvre la confirmation d'ajout vers la plateforme cible.
    *
@@ -84,7 +76,6 @@ class WishlistView extends Component {
    */
   openTransferDialog(game) {
     const transferPlatform = this.transferService.findTargetPlatform(game, this.props.platforms);
-
     this.setState({
       transferError: transferPlatform
         ? ""
@@ -98,7 +89,6 @@ class WishlistView extends Component {
       transferSelectedGame: game,
     });
   }
-
   /**
    * Ferme la modale de transfert wishlist.
    *
@@ -117,7 +107,6 @@ class WishlistView extends Component {
       isTransferringGame: false,
     });
   }
-
   /**
    * Met a jour un champ de la confirmation de transfert.
    *
@@ -133,7 +122,6 @@ class WishlistView extends Component {
       },
     }));
   }
-
   /**
    * Valide puis ajoute le jeu wishlist dans sa plateforme.
    *
@@ -143,12 +131,10 @@ class WishlistView extends Component {
   async submitTransferDialog(event) {
     event.preventDefault();
     const { transferSelectedGame, transferPlatform, transferForm } = this.state;
-
     if (!transferSelectedGame || !transferPlatform) {
       this.setState({ transferError: "La plateforme cible est introuvable." });
       return;
     }
-
     if (
       !this.transferService.hasTextValue(transferForm["Date d'achat"]) ||
       !this.transferService.hasTextValue(transferForm["Lieu d'achat"])
@@ -156,7 +142,6 @@ class WishlistView extends Component {
       this.setState({ transferError: "La date d'achat et le lieu d'achat sont obligatoires." });
       return;
     }
-
     try {
       this.setState({ isTransferringGame: true, transferError: "" });
       await this.props.onAddWishlistGameToPlatform(
@@ -177,7 +162,6 @@ class WishlistView extends Component {
       });
     }
   }
-
   /**
    * Confirme puis supprime un jeu de la wishlist.
    *
@@ -192,7 +176,6 @@ class WishlistView extends Component {
     if (!confirmed) {
       return;
     }
-
     try {
       await this.props.onDeleteWishlistGame(game);
       this.setState({
@@ -205,7 +188,26 @@ class WishlistView extends Component {
       });
     }
   }
-
+  /**
+   * Enregistre la modification d'un jeu wishlist.
+   *
+   * @param {Record<string, unknown>} originalGame - Jeu original.
+   * @param {Record<string, unknown>} updatedGame - Jeu modifie.
+   * @returns {Promise<void>} Modifie le jeu et affiche le resultat.
+   */
+  async saveWishlistGame(originalGame, updatedGame) {
+    try {
+      await this.props.onSaveWishlistGame(originalGame, updatedGame);
+      this.setState({
+        transferError: "",
+        transferMessage: `${updatedGame["Nom du jeu"]} a ete modifie dans la liste de souhaits.`,
+      });
+    } catch (error) {
+      this.setState({
+        transferError: error.message || "Impossible de modifier ce jeu de la liste de souhaits.",
+      });
+    }
+  }
   /**
    * Retourne la classe visuelle d'une ligne wishlist.
    *
@@ -217,7 +219,6 @@ class WishlistView extends Component {
       ? "wishlistPurchasePendingRow"
       : "wishlistRegularRow";
   }
-
   /**
    * Retourne le message a afficher quand aucun jeu ne passe les filtres.
    *
@@ -228,14 +229,11 @@ class WishlistView extends Component {
     if (this.state.purchaseStatusFilter === "pending") {
       return "Aucun jeu deja precommande ne correspond aux filtres.";
     }
-
     if (this.state.purchaseStatusFilter === "wishlist") {
       return "Aucun jeu souhaite ne correspond aux filtres.";
     }
-
     return "Aucun jeu ne correspond aux filtres de colonnes.";
   }
-
   /**
    * Rend le contenu principal de la liste de souhaits.
    *
@@ -254,8 +252,13 @@ class WishlistView extends Component {
       error,
       isLoadingGames,
       canAddGame,
+      canEditWishlistGame,
       canDeleteWishlistGame,
+      editingWishlistGame,
+      isSavingWishlistGame,
       onBack,
+      onEditWishlistGame,
+      onCancelEditWishlistGame,
       onToggleSort,
       onColumnFiltersChange,
     } = this.props;
@@ -270,7 +273,6 @@ class WishlistView extends Component {
     const filteredSortedGames = this.filterGamesByPurchaseStatus(namedSortedGames);
     const filteredVisibleGames = this.filterGamesByPurchaseStatus(namedFilteredGames);
     const nextRelease = this.transferService.getNextWishlistRelease(namedGames);
-
     return (
       <main className="container">
         <button className="backButton" type="button" onClick={onBack}>
@@ -283,7 +285,6 @@ class WishlistView extends Component {
             <p className="subtitle">Jeux reperes avant ajout a la collection.</p>
           </div>
         </section>
-
         <section className="statsGrid wishlistStatsGrid" aria-label="Statistiques de la liste de souhaits">
           <article className="statCard">
             <span>Jeux</span>
@@ -319,14 +320,12 @@ class WishlistView extends Component {
             ) : null}
           </article>
         </section>
-
         {error ? <p className="error">{error}</p> : null}
         {this.state.transferMessage ? <p className="success">{this.state.transferMessage}</p> : null}
         {isLoadingGames ? <p>Chargement des jeux...</p> : null}
         {!isLoadingGames && namedGames.length === 0 ? (
           <p>Aucun jeu dans la liste de souhaits.</p>
         ) : null}
-
         {!isLoadingGames && namedGames.length > 0 ? (
           <>
             <section className="wishlistPurchaseFilter" aria-label="Filtre achat wishlist">
@@ -353,9 +352,23 @@ class WishlistView extends Component {
               onColumnFiltersChange={onColumnFiltersChange}
               getRowClassName={(game) => this.getWishlistRowClassName(game)}
               renderRowActions={
-                canAddGame || canDeleteWishlistGame
+                canAddGame || canEditWishlistGame || canDeleteWishlistGame
                   ? (game) => (
                       <div className="wishlistActionGroup">
+                        {canEditWishlistGame ? (
+                          <button
+                            className="wishlistIconButton"
+                            type="button"
+                            aria-label={`Modifier ${game["Nom du jeu"] || "ce jeu"} dans la wishlist`}
+                            title="Modifier dans la wishlist"
+                            onClick={() => onEditWishlistGame(game)}
+                          >
+                            <svg aria-hidden="true" className="wishlistActionIcon" viewBox="0 0 24 24">
+                              <path d="M4 17.5V21h3.5L18.1 10.4l-3.5-3.5L4 17.5Z" />
+                              <path d="m16 5.5 1.6-1.6a1.2 1.2 0 0 1 1.7 0l.8.8a1.2 1.2 0 0 1 0 1.7L18.5 8 16 5.5Z" />
+                            </svg>
+                          </button>
+                        ) : null}
                         {canAddGame ? (
                           <button
                             className="wishlistIconButton"
@@ -393,11 +406,9 @@ class WishlistView extends Component {
             />
           </>
         ) : null}
-
         {!isLoadingGames && namedGames.length > 0 && filteredVisibleGames.length === 0 ? (
           <p>{this.getEmptyFilterMessage()}</p>
         ) : null}
-
         {transferSelectedGame ? (
           <div className="modalOverlay" role="presentation">
             <form
@@ -413,11 +424,9 @@ class WishlistView extends Component {
                   ? `${transferSelectedGame["Nom du jeu"]} sera ajoute a la plateforme existante ${transferPlatform}.`
                   : "Aucune plateforme existante ne correspond a la console de ce jeu."}
               </p>
-
               {this.state.transferError ? (
                 <p className="error">{this.state.transferError}</p>
               ) : null}
-
               <label>
                 Date d'achat
                 <input
@@ -429,7 +438,6 @@ class WishlistView extends Component {
                   required
                 />
               </label>
-
               <label>
                 Lieu d'achat
                 <input
@@ -441,7 +449,6 @@ class WishlistView extends Component {
                   required
                 />
               </label>
-
               <div className="formActions">
                 <button
                   className="secondaryButton"
@@ -460,9 +467,16 @@ class WishlistView extends Component {
             </form>
           </div>
         ) : null}
+        <EditWishlistDialog
+          game={editingWishlistGame}
+          isSaving={isSavingWishlistGame}
+          onSubmit={(originalGame, updatedGame) =>
+            this.saveWishlistGame(originalGame, updatedGame)
+          }
+          onCancel={onCancelEditWishlistGame}
+        />
       </main>
     );
   }
 }
-
 export default WishlistView;

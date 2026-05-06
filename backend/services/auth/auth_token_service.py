@@ -19,6 +19,8 @@ import os
 import time
 from typing import Any, Optional
 
+from services.security import EnvSecretCipher
+
 
 class AuthTokenService:
     """Gere les identifiants backend et les tokens Bearer signes.
@@ -40,8 +42,8 @@ class AuthTokenService:
 
         Args:
             username (Optional[str]): Identifiant autorise, sinon `AUTH_USERNAME`.
-            password (Optional[str]): Mot de passe autorise, sinon `AUTH_PASSWORD`.
-            secret_key (Optional[str]): Cle HMAC, sinon `AUTH_SECRET_KEY`.
+            password (Optional[str]): Mot de passe autorise, sinon l'environnement chiffre.
+            secret_key (Optional[str]): Cle HMAC, sinon l'environnement chiffre.
             token_ttl_seconds (Optional[int]): Duree de vie du token en secondes.
 
         Returns:
@@ -49,10 +51,15 @@ class AuthTokenService:
         """
 
         self.username = username or os.getenv("AUTH_USERNAME", "admin")
-        self.password = password or os.getenv("AUTH_PASSWORD", "change-me")
-        self.secret_key = secret_key or os.getenv(
-            "AUTH_SECRET_KEY",
-            "cloud-collection-app-dev-secret",
+        self.password = password or self._read_secret(
+            encrypted_env_name="AUTH_PASSWORD_ENCRYPTED",
+            plain_env_name="AUTH_PASSWORD",
+            default_value="change-me",
+        )
+        self.secret_key = secret_key or self._read_secret(
+            encrypted_env_name="AUTH_SECRET_KEY_ENCRYPTED",
+            plain_env_name="AUTH_SECRET_KEY",
+            default_value="cloud-collection-app-dev-secret",
         )
         self.token_ttl_seconds = token_ttl_seconds or int(
             os.getenv("AUTH_TOKEN_TTL_SECONDS", str(self.DEFAULT_TOKEN_TTL_SECONDS))
@@ -184,6 +191,32 @@ class AuthTokenService:
             hashlib.sha256,
         ).digest()
         return base64.urlsafe_b64encode(signature).decode("ascii").rstrip("=")
+
+    def _read_secret(
+        self,
+        encrypted_env_name: str,
+        plain_env_name: str,
+        default_value: str,
+    ) -> str:
+        """Lit un secret chiffre depuis l'environnement avec secours en clair.
+
+        Args:
+            encrypted_env_name (str): Nom de la variable contenant le secret chiffre.
+            plain_env_name (str): Nom de la variable contenant le secret en clair.
+            default_value (str): Valeur par defaut si aucune variable n'est definie.
+
+        Returns:
+            str: Secret pret a etre utilise par le service.
+        """
+
+        encrypted_value = os.getenv(encrypted_env_name)
+        if encrypted_value:
+            encryption_key = os.getenv("AUTH_ENV_ENCRYPTION_KEY")
+            if not encryption_key:
+                raise ValueError("AUTH_ENV_ENCRYPTION_KEY est requis pour dechiffrer les secrets.")
+            return EnvSecretCipher(encryption_key).decrypt(encrypted_value)
+
+        return os.getenv(plain_env_name, default_value)
 
 
 def secrets_equal(left: str, right: str) -> bool:

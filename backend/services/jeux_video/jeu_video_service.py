@@ -22,6 +22,7 @@ from services.ods import (
     OdsWriter,
     OdsXmlReader,
 )
+from services.validation import GamePayloadValidator, WishlistPayloadValidator
 
 WISHLIST_SHEET = "Liste de souhaits"
 
@@ -46,6 +47,8 @@ class JeuVideoService:
         self.image_reader = OdsImageReader(self.archive_reader, self.cache)
         self.reader = OdsReader(self.ods_path, self.cache, self.xml_reader, self.image_reader)
         self.writer = OdsWriter(self.ods_path, self.archive_reader, self.xml_reader)
+        self.game_validator = GamePayloadValidator()
+        self.wishlist_validator = WishlistPayloadValidator()
 
     def search(self, platform: str, query: str = "") -> list[dict]:
         """Recherche les jeux d'une plateforme.
@@ -176,6 +179,44 @@ class JeuVideoService:
         self.reset_cache()
         return {"Nom du jeu": game_name, "Console": console}
 
+    def update_wishlist_game(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Modifie un jeu existant dans la liste de souhaits apres validation.
+
+        Args:
+            payload (dict[str, Any]): Donnees contenant `original` et `updated`.
+
+        Returns:
+            dict[str, Any]: Jeu wishlist modifie.
+        """
+
+        original = payload.get("original") or {}
+        updated = payload.get("updated") or {}
+        if not isinstance(original, dict) or not isinstance(updated, dict):
+            raise ValueError("Les donnees de modification sont invalides.")
+        original_game = self._build_wishlist_identifier(original)
+        updated_game = self.wishlist_validator.validate_update_payload(updated)
+        self.writer.update_wishlist_game(original_game=original_game, updated_game=updated_game)
+        self.reset_cache()
+        return updated_game
+
+    def _build_wishlist_identifier(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Construit l'identifiant de ligne wishlist.
+
+        Args:
+            payload (dict[str, Any]): Donnees originales de la ligne wishlist.
+
+        Returns:
+            dict[str, Any]: Identifiant contenant nom et console.
+        """
+
+        game_name = SheetValueFormatter.clean_text(payload.get("Nom du jeu"))
+        console = SheetValueFormatter.clean_text(payload.get("Console") or payload.get("Plateforme"))
+        if not game_name:
+            raise ValueError("Le nom du jeu original est obligatoire.")
+        if not console:
+            raise ValueError("La plateforme originale est obligatoire.")
+        return {"Nom du jeu": game_name, "Console": console}
+
     def delete_game(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Supprime un jeu d'une plateforme en vidant uniquement ses colonnes de jeu.
 
@@ -199,6 +240,36 @@ class JeuVideoService:
         self.writer.delete_game(platform=platform, game=game)
         self.reset_cache()
         return {"Plateforme": platform, **game}
+
+    def update_game(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Modifie un jeu existant d'une plateforme apres validation des champs.
+
+        Args:
+            payload (dict[str, Any]): Donnees contenant `platform`, `original` et `updated`.
+
+        Returns:
+            dict[str, Any]: Jeu modifie, enrichi avec `Plateforme`.
+        """
+
+        platform = SheetValueFormatter.clean_text(payload.get("platform"))
+        original = payload.get("original") or {}
+        updated = payload.get("updated") or {}
+        if not platform:
+            raise ValueError("La plateforme est obligatoire.")
+        if platform not in self.list_platforms():
+            raise ValueError(f"Sheet '{platform}' not found in ODS file.")
+        if not isinstance(original, dict) or not isinstance(updated, dict):
+            raise ValueError("Les donnees de modification sont invalides.")
+
+        original_game_name = SheetValueFormatter.clean_text(original.get("Nom du jeu"))
+        if not original_game_name:
+            raise ValueError("Le nom du jeu original est obligatoire.")
+
+        original_game = self._build_game_payload(original, original_game_name)
+        updated_game = self.game_validator.validate_update_payload(updated)
+        self.writer.update_game(platform=platform, original_game=original_game, updated_game=updated_game)
+        self.reset_cache()
+        return {"Plateforme": platform, **updated_game}
 
     def reset_cache(self) -> int:
         """Vide le cache des donnees lues depuis le fichier ODS.

@@ -144,10 +144,16 @@ class AppViewSwitch {
         isLoadingGames={props.isLoadingGames}
         platforms={props.platforms}
         canAddGame={props.actionPermissions.canAddGame}
+        canEditWishlistGame={props.actionPermissions.canEditWishlistGame}
         canDeleteWishlistGame={props.actionPermissions.canDeleteWishlistGame}
+        editingWishlistGame={props.editingWishlistGame}
+        isSavingWishlistGame={props.isSavingWishlistGame}
         onBack={props.goHome}
         onAddWishlistGameToPlatform={props.addWishlistGameToPlatform}
         onDeleteWishlistGame={props.deleteWishlistGame}
+        onEditWishlistGame={props.openEditWishlistGame}
+        onSaveWishlistGame={props.saveEditedWishlistGame}
+        onCancelEditWishlistGame={props.cancelEditWishlistGame}
         onToggleSort={props.toggleSort}
         onColumnFiltersChange={props.setColumnFilters}
       />
@@ -179,11 +185,17 @@ class AppViewSwitch {
         error={props.error}
         isLoadingPlatforms={props.isLoadingPlatforms}
         isLoadingGames={props.isLoadingGames}
+        isSavingGame={props.isSavingGame}
+        canEditGame={props.actionPermissions.canEditGame}
         canDeleteGame={props.actionPermissions.canDeleteGame}
+        editingGame={props.editingGame}
         onBack={props.goHome}
         onOpenPlatform={props.openPlatform}
         onToggleSort={props.toggleSort}
         onColumnFiltersChange={props.setColumnFilters}
+        onEditGame={props.openEditGame}
+        onSaveGame={props.saveEditedGame}
+        onCancelEditGame={props.cancelEditGame}
         onDeleteGame={props.deletePlatformGame}
       />
     );

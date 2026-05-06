@@ -126,6 +126,23 @@ class JeuxVideoApi {
   }
 
   /**
+   * Modifie un jeu d'une plateforme.
+   *
+   * @param {Object} payload - Donnees contenant plateforme, jeu original et jeu modifie.
+   * @returns {Promise<Object>} Objet contenant le jeu modifie.
+   */
+  static async updateGame(payload) {
+    return this.fetchJson("/collections/JeuxVideo/games", "Impossible de modifier le jeu.", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...this.getAuthorizationHeaders(),
+      },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  /**
    * Supprime un jeu de la liste de souhaits.
    *
    * @param {Object} game - Jeu wishlist identifie par son nom et sa console.
@@ -145,6 +162,27 @@ class JeuxVideoApi {
           "Nom du jeu": game["Nom du jeu"],
           Console: game.Console || game.Plateforme,
         }),
+      }
+    );
+  }
+
+  /**
+   * Modifie un jeu de la liste de souhaits.
+   *
+   * @param {Object} payload - Donnees contenant jeu original et jeu modifie.
+   * @returns {Promise<Object>} Objet contenant le jeu wishlist modifie.
+   */
+  static async updateWishlistGame(payload) {
+    return this.fetchJson(
+      "/collections/JeuxVideo/wishlist/games",
+      "Impossible de modifier le jeu de la liste de souhaits.",
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...this.getAuthorizationHeaders(),
+        },
+        body: JSON.stringify(payload),
       }
     );
   }

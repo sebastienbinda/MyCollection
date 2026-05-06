@@ -24,6 +24,7 @@ class BackendRouteAccessService {
     return {
       canAddGame: false,
       canDeleteGame: false,
+      canEditWishlistGame: false,
       canDeleteWishlistGame: false,
       canResetCache: false,
       isAuthenticated: false,
@@ -111,7 +112,9 @@ class BackendRouteAccessService {
     return {
       ...BackendRouteAccessService.getDefaultActionPermissions(),
       canAddGame: this.canAccess("POST", "/collections/JeuxVideo/games"),
+      canEditGame: this.canAccess("PUT", "/collections/JeuxVideo/games"),
       canDeleteGame: this.canAccess("DELETE", "/collections/JeuxVideo/games"),
+      canEditWishlistGame: this.canAccess("PUT", "/collections/JeuxVideo/wishlist/games"),
       canDeleteWishlistGame: this.canAccess("DELETE", "/collections/JeuxVideo/wishlist/games"),
       canResetCache: this.canAccess("POST", "/collections/JeuxVideo/cache/reset"),
       isAuthenticated: this.hasToken(),

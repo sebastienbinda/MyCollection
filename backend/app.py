@@ -331,6 +331,33 @@ def delete_jeux_video_game():
         return jsonify({"error": f"Unable to update ODS file: {exc}"}), 500
 
 
+@app.put("/collections/JeuxVideo/games")
+@auth_guard.require_token
+def update_jeux_video_game():
+    """Modifie un jeu dans l'onglet ODS de sa plateforme.
+
+    Args:
+        Aucun.
+
+    JSON Body:
+        dict[str, Any]: Donnees contenant `platform`, `original` et `updated`.
+
+    Returns:
+        tuple[flask.Response, int]: Objet JSON avec le jeu modifie ou erreur JSON.
+    """
+
+    payload = request.get_json(silent=True) or {}
+    try:
+        item = JeuVideoService().update_game(payload)
+        return jsonify({"type": CollectionTypes.JeuxVideo.value, "item": item})
+    except FileNotFoundError as exc:
+        return jsonify({"error": str(exc)}), 500
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"error": f"Unable to update ODS file: {exc}"}), 500
+
+
 @app.delete("/collections/JeuxVideo/wishlist/games")
 @auth_guard.require_token
 def delete_jeux_video_wishlist_game():
@@ -349,6 +376,33 @@ def delete_jeux_video_wishlist_game():
     payload = request.get_json(silent=True) or {}
     try:
         item = JeuVideoService().delete_wishlist_game(payload)
+        return jsonify({"type": CollectionTypes.JeuxVideo.value, "item": item})
+    except FileNotFoundError as exc:
+        return jsonify({"error": str(exc)}), 500
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"error": f"Unable to update ODS file: {exc}"}), 500
+
+
+@app.put("/collections/JeuxVideo/wishlist/games")
+@auth_guard.require_token
+def update_jeux_video_wishlist_game():
+    """Modifie un jeu dans l'onglet ODS `Liste de souhaits`.
+
+    Args:
+        Aucun.
+
+    JSON Body:
+        dict[str, Any]: Donnees contenant `original` et `updated`.
+
+    Returns:
+        tuple[flask.Response, int]: Objet JSON avec le jeu modifie ou erreur JSON.
+    """
+
+    payload = request.get_json(silent=True) or {}
+    try:
+        item = JeuVideoService().update_wishlist_game(payload)
         return jsonify({"type": CollectionTypes.JeuxVideo.value, "item": item})
     except FileNotFoundError as exc:
         return jsonify({"error": str(exc)}), 500

@@ -15,6 +15,8 @@ import AppRouting from "./appRouting";
 import AppFrame from "./components/AppFrame";
 import AppViewSwitch from "./components/AppViewSwitch";
 import useBackendActionPermissions from "./hooks/useBackendActionPermissions";
+import usePlatformGameMutations from "./hooks/usePlatformGameMutations";
+import useWishlistGameMutations from "./hooks/useWishlistGameMutations";
 import JeuxVideoApi from "./services/JeuxVideoApi";
 const initialGameForm = AppRouting.createInitialGameForm();
 /**
@@ -44,8 +46,6 @@ function App() {
   const [addGameMessage, setAddGameMessage] = useState("");
   const [addGameError, setAddGameError] = useState("");
   const [addGameColumnValues, setAddGameColumnValues] = useState({});
-  const [deleteGameMessage, setDeleteGameMessage] = useState("");
-  const [deleteGameError, setDeleteGameError] = useState("");
   const [cacheResetMessage, setCacheResetMessage] = useState("");
   const [cacheResetError, setCacheResetError] = useState("");
   const actionPermissions = useBackendActionPermissions();
@@ -68,6 +68,10 @@ function App() {
   const selectedPlatformStats = homeStats?.platforms?.find(
     (platform) => platform.sheet_name === selectedPlatform
   );
+  const reloadOds = () => setOdsReloadKey((previous) => previous + 1);
+  const reloadGames = () => setGamesReloadKey((previous) => previous + 1);
+  const gameMutations = usePlatformGameMutations(selectedPlatform, reloadOds, reloadGames);
+  const wishlistMutations = useWishlistGameMutations(reloadOds, reloadGames);
   /**
    * Synchronise l'URL avec la plateforme selectionnee.
    *
@@ -92,8 +96,7 @@ function App() {
    * @returns {void} Vide le succes et l'erreur de suppression.
    */
   const clearDeleteGameFeedback = () => {
-    setDeleteGameMessage("");
-    setDeleteGameError("");
+    gameMutations.clearDeleteGameFeedback();
   };
 
   /**
@@ -354,8 +357,8 @@ function App() {
         ...initialGameForm,
         platform: gameForm.platform,
       });
-      setOdsReloadKey((previous) => previous + 1);
-      setGamesReloadKey((previous) => previous + 1);
+      reloadOds();
+      reloadGames();
       openPlatform(data.item.Plateforme);
     } catch (e) {
       setAddGameError(e.message || "Impossible d'ajouter le jeu.");
@@ -372,8 +375,8 @@ function App() {
    */
   const addWishlistGameToPlatform = async (gamePayload) => {
     const data = await JeuxVideoApi.addGame(gamePayload);
-    setOdsReloadKey((previous) => previous + 1);
-    setGamesReloadKey((previous) => previous + 1);
+    reloadOds();
+    reloadGames();
     return data;
   };
 
@@ -385,39 +388,9 @@ function App() {
    */
   const deleteWishlistGame = async (game) => {
     const data = await JeuxVideoApi.deleteWishlistGame(game);
-    setOdsReloadKey((previous) => previous + 1);
-    setGamesReloadKey((previous) => previous + 1);
+    reloadOds();
+    reloadGames();
     return data;
-  };
-
-  /**
-   * Supprime un jeu de la plateforme courante puis recharge les donnees.
-   *
-   * @param {Object} game - Jeu de plateforme a supprimer.
-   * @returns {Promise<void>} Vide les cellules du jeu et actualise l'interface.
-   */
-  const deletePlatformGame = async (game) => {
-    const gameName = game["Nom du jeu"] || "ce jeu";
-    const confirmed = window.confirm(`Confirmer la suppression de "${gameName}" ?`);
-    if (!confirmed) {
-      return;
-    }
-
-    setDeleteGameMessage("");
-    setDeleteGameError("");
-    try {
-      await JeuxVideoApi.deleteGame({
-        platform: selectedPlatform,
-        ...game,
-      });
-      setDeleteGameMessage(`${gameName} a ete supprime de ${selectedPlatform}.`);
-      setOdsReloadKey((previous) => previous + 1);
-      setGamesReloadKey((previous) => previous + 1);
-    } catch (e) {
-      const message = e.message || "Impossible de supprimer le jeu.";
-      setDeleteGameError(message);
-      window.alert(message);
-    }
   };
 
   /**
@@ -435,8 +408,8 @@ function App() {
       await JeuxVideoApi.resetCache();
 
       setCacheResetMessage("Cache reinitialise. Donnees rechargees.");
-      setOdsReloadKey((previous) => previous + 1);
-      setGamesReloadKey((previous) => previous + 1);
+      reloadOds();
+      reloadGames();
     } catch (e) {
       setCacheResetError(e.message || "Impossible de reinitialiser le cache.");
     } finally {
@@ -484,14 +457,27 @@ function App() {
         gameForm, addGameColumnValues, addGameError, addGameMessage, isAddingGame,
         namedGames, columns, valuesByColumn, columnFilters, sortConfig,
         sortedGames, filteredGames, isLoadingGames,
+        isSavingGame: gameMutations.isSavingGame,
+        editingGame: gameMutations.editingGame,
+        editingWishlistGame: wishlistMutations.editingWishlistGame,
+        isSavingWishlistGame: wishlistMutations.isSavingWishlistGame,
         selectedPlatformStats,
         studioCount: getStudioCount(namedGames),
-        deleteGameMessage, deleteGameError, isLoadingPlatforms,
+        deleteGameMessage: gameMutations.deleteGameMessage,
+        deleteGameError: gameMutations.deleteGameError,
+        isLoadingPlatforms,
         actionPermissions,
         openAddGamePage, openWishlist, openPlatform, setHomeSearchQuery, logout: JeuxVideoApi.confirmAndClearAccessToken,
         searchGamesByName, closeHomeSearch, resetOdsCache, goHome,
         submitNewGame, updateGameFormValue, addWishlistGameToPlatform,
-        deleteWishlistGame, toggleSort, setColumnFilters, deletePlatformGame,
+        deleteWishlistGame, toggleSort, setColumnFilters,
+        openEditGame: gameMutations.openEditGame,
+        saveEditedGame: gameMutations.saveEditedGame,
+        cancelEditGame: gameMutations.cancelEditGame,
+        openEditWishlistGame: wishlistMutations.openEditWishlistGame,
+        saveEditedWishlistGame: wishlistMutations.saveEditedWishlistGame,
+        cancelEditWishlistGame: wishlistMutations.cancelEditWishlistGame,
+        deletePlatformGame: gameMutations.deletePlatformGame,
       })}
     </AppFrame>
   );

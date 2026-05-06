@@ -13,6 +13,7 @@ import unittest
 import pandas as pd
 
 from services.jeux_video import JeuVideoService
+from services.validation import GamePayloadValidator, WishlistPayloadValidator
 
 
 class FakeReader:
@@ -81,6 +82,8 @@ class FakeWriter:
         self.added_games = []
         self.deleted_games = []
         self.deleted_wishlist_games = []
+        self.updated_games = []
+        self.updated_wishlist_games = []
 
     def add_game(self, platform, game):
         """Enregistre l'ajout d'un jeu sans ecrire de fichier.
@@ -108,6 +111,20 @@ class FakeWriter:
 
         self.deleted_games.append((platform, game))
 
+    def update_game(self, platform, original_game, updated_game):
+        """Enregistre la modification d'un jeu sans ecrire de fichier.
+
+        Args:
+            platform (str): Plateforme cible.
+            original_game (dict[str, object]): Jeu original.
+            updated_game (dict[str, object]): Jeu modifie.
+
+        Returns:
+            None: Les donnees sont conservees en memoire.
+        """
+
+        self.updated_games.append((platform, original_game, updated_game))
+
     def delete_wishlist_game(self, game_name, console):
         """Enregistre la suppression wishlist sans ecrire de fichier.
 
@@ -120,6 +137,19 @@ class FakeWriter:
         """
 
         self.deleted_wishlist_games.append((game_name, console))
+
+    def update_wishlist_game(self, original_game, updated_game):
+        """Enregistre la modification wishlist sans ecrire de fichier.
+
+        Args:
+            original_game (dict[str, object]): Jeu wishlist original.
+            updated_game (dict[str, object]): Jeu wishlist modifie.
+
+        Returns:
+            None: Les donnees sont conservees en memoire.
+        """
+
+        self.updated_wishlist_games.append((original_game, updated_game))
 
 
 class FakeCache:
@@ -164,6 +194,8 @@ class JeuVideoServiceTest(unittest.TestCase):
         self.service.reader = FakeReader()
         self.service.writer = FakeWriter()
         self.service.cache = FakeCache()
+        self.service.game_validator = GamePayloadValidator()
+        self.service.wishlist_validator = WishlistPayloadValidator()
 
     def test_search_filters_games_by_query(self):
         """Verifie la recherche filtree sur une plateforme.
@@ -305,6 +337,81 @@ class JeuVideoServiceTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.service.delete_game({"platform": "Switch"})
 
+    def test_update_game_writes_validated_payload_and_resets_cache(self):
+        """Verifie la modification validee d'un jeu.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident l'ecriture et le reset cache.
+        """
+
+        item = self.service.update_game(
+            {
+                "platform": "Switch",
+                "original": {"Nom du jeu": "Mario Kart", "Studio": "Nintendo"},
+                "updated": {
+                    "Nom du jeu": "Mario Kart 8",
+                    "Date d'achat": "2026-05-06",
+                    "Prix d'achat": "0",
+                    "Lieu d'achat": "Eshop",
+                },
+            }
+        )
+
+        self.assertEqual("Mario Kart 8", item["Nom du jeu"])
+        self.assertEqual(1, self.service.cache.reset_count)
+        self.assertEqual("Mario Kart", self.service.writer.updated_games[0][1]["Nom du jeu"])
+        self.assertEqual("0", self.service.writer.updated_games[0][2]["Prix d'achat"])
+
+    def test_update_game_rejects_missing_purchase_date(self):
+        """Verifie que la date d'achat est obligatoire en modification.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident l'erreur attendue.
+        """
+
+        with self.assertRaises(ValueError):
+            self.service.update_game(
+                {
+                    "platform": "Switch",
+                    "original": {"Nom du jeu": "Mario Kart"},
+                    "updated": {
+                        "Nom du jeu": "Mario Kart",
+                        "Prix d'achat": "0",
+                        "Lieu d'achat": "Eshop",
+                    },
+                }
+            )
+
+    def test_update_game_rejects_empty_name_and_purchase_place(self):
+        """Verifie les champs obligatoires texte de modification.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident l'erreur attendue.
+        """
+
+        with self.assertRaises(ValueError):
+            self.service.update_game(
+                {
+                    "platform": "Switch",
+                    "original": {"Nom du jeu": "Mario Kart"},
+                    "updated": {
+                        "Nom du jeu": " ",
+                        "Date d'achat": "2026-05-06",
+                        "Prix d'achat": "0",
+                        "Lieu d'achat": "",
+                    },
+                }
+            )
+
     def test_delete_wishlist_game_requires_console(self):
         """Verifie la validation des donnees de suppression wishlist.
 
@@ -317,6 +424,50 @@ class JeuVideoServiceTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.service.delete_wishlist_game({"Nom du jeu": "Chrono Trigger"})
+
+    def test_update_wishlist_game_writes_validated_payload_and_resets_cache(self):
+        """Verifie la modification validee d'un jeu wishlist.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident l'ecriture et le reset cache.
+        """
+
+        item = self.service.update_wishlist_game(
+            {
+                "original": {"Nom du jeu": "Chrono Trigger", "Console": "Switch 2"},
+                "updated": {
+                    "Nom du jeu": "Chrono Trigger HD",
+                    "Plateforme": "Switch 2",
+                    "Studio": "Square",
+                },
+            }
+        )
+
+        self.assertEqual("Chrono Trigger HD", item["Nom du jeu"])
+        self.assertEqual("Switch 2", item["Console"])
+        self.assertEqual(1, self.service.cache.reset_count)
+        self.assertEqual("Square", self.service.writer.updated_wishlist_games[0][1]["Studio"])
+
+    def test_update_wishlist_game_rejects_missing_studio(self):
+        """Verifie que le studio est obligatoire en modification wishlist.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident l'erreur attendue.
+        """
+
+        with self.assertRaises(ValueError):
+            self.service.update_wishlist_game(
+                {
+                    "original": {"Nom du jeu": "Chrono Trigger", "Console": "Switch 2"},
+                    "updated": {"Nom du jeu": "Chrono Trigger", "Plateforme": "Switch 2"},
+                }
+            )
 
 
 if __name__ == "__main__":

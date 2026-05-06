@@ -251,6 +251,13 @@
   justify-content: center;
 }
 
+.rowActionGroup {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.25rem;
+  justify-content: center;
+}
+
 .wishlistIconButton {
   align-items: center;
   display: inline-flex;
@@ -295,6 +302,26 @@
   max-width: 30rem;
   padding: 1.25rem;
   width: min(100%, 30rem);
+}
+
+.editGameDialog {
+  background: #ffffff;
+  border: 1px solid #dbe4f0;
+  border-radius: 8px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+  display: grid;
+  gap: 1rem;
+  max-height: min(90vh, 48rem);
+  overflow: auto;
+  padding: 1.25rem;
+  width: min(100%, 42rem);
+}
+
+.editGameDialogHeader {
+  align-items: start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
 }
 
 .wishlistTransferDialog h2 {
