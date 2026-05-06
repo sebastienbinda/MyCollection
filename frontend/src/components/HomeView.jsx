@@ -20,8 +20,11 @@ function HomeView({
   cacheResetMessage,
   cacheResetError,
   isResettingCache,
+  downloadError,
+  isDownloadingOds,
   canAddGame,
   canResetCache,
+  canDownloadOds,
   isAuthenticated,
   onAddGame,
   onLogout,
@@ -31,6 +34,7 @@ function HomeView({
   onSearchSubmit,
   onCloseSearch,
   onResetCache,
+  onDownloadOds,
 }) {
   const topPlatform = homeStats?.platforms?.reduce((top, platform) => {
     if (!top || (platform.games_count || 0) > (top.games_count || 0)) {
@@ -95,6 +99,16 @@ function HomeView({
                 {isResettingCache ? "Reset..." : "Reset cache"}
               </button>
             ) : null}
+            {canDownloadOds ? (
+              <button
+                className="downloadOdsButton"
+                type="button"
+                onClick={onDownloadOds}
+                disabled={isDownloadingOds}
+              >
+                {isDownloadingOds ? "Telechargement..." : "Telecharger ODS"}
+              </button>
+            ) : null}
             <button
               className="secondaryButton"
               type="button"
@@ -109,6 +123,7 @@ function HomeView({
 
       {error ? <p className="error">{error}</p> : null}
       {cacheResetError ? <p className="error">{cacheResetError}</p> : null}
+      {downloadError ? <p className="error">{downloadError}</p> : null}
       {cacheResetMessage ? <p className="success">{cacheResetMessage}</p> : null}
       {isLoadingHome ? <p>Chargement des statistiques...</p> : null}
 

@@ -70,8 +70,11 @@ class AppViewSwitch {
         cacheResetMessage={props.cacheResetMessage}
         cacheResetError={props.cacheResetError}
         isResettingCache={props.isResettingCache}
+        downloadError={props.downloadError}
+        isDownloadingOds={props.isDownloadingOds}
         canAddGame={props.actionPermissions.canAddGame}
         canResetCache={props.actionPermissions.canResetCache}
+        canDownloadOds={props.actionPermissions.canDownloadOds}
         isAuthenticated={props.actionPermissions.isAuthenticated}
         onAddGame={props.openAddGamePage}
         onLogout={props.logout}
@@ -81,6 +84,7 @@ class AppViewSwitch {
         onSearchSubmit={props.searchGamesByName}
         onCloseSearch={props.closeHomeSearch}
         onResetCache={props.resetOdsCache}
+        onDownloadOds={props.downloadOdsFile}
       />
     );
   }

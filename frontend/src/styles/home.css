@@ -172,6 +172,17 @@
   justify-content: flex-end;
 }
 
+.downloadOdsButton {
+  background: #7c2d12;
+  border-color: #7c2d12;
+  color: #ffffff;
+}
+
+.downloadOdsButton:hover:not(:disabled) {
+  background: #9a3412;
+  border-color: #9a3412;
+}
+
 .authButtonLink {
   align-items: center;
   background: #ffffff;

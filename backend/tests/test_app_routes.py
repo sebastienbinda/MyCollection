@@ -9,6 +9,7 @@
 # Auteurs : Codex et Binda Sébastien
 #
 import unittest
+from pathlib import Path
 import app as app_module
 class FakeJeuVideoService:
     def __init__(self):
@@ -34,6 +35,14 @@ class FakeJeuVideoService:
             int: Nombre d'entrees supprimees.
         """
         return 2
+    def get_ods_download(self):
+        """Retourne un fichier ODS factice a telecharger.
+        Args:
+            Aucun.
+        Returns:
+            tuple[str, str]: Chemin et nom de fichier factices.
+        """
+        return str(Path(__file__)), "JeuxVideo-test.ods"
     def search(self, platform, query=""):
         """Retourne les jeux factices d'une plateforme.
         Args:
@@ -205,6 +214,29 @@ class AppRoutesTest(unittest.TestCase):
         response = self.client.post("/collections/JeuxVideo/cache/reset")
         self.assertEqual(401, response.status_code)
         self.assertIn("Bearer", response.get_json()["error"])
+    def test_ods_download_route_returns_attachment(self):
+        """Verifie l'endpoint de telechargement du fichier ODS.
+        Args:
+            Aucun.
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+        response = self.client.get(
+            "/collections/JeuxVideo/ods/download",
+            headers=self.get_auth_headers(),
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertIn("attachment", response.headers["Content-Disposition"])
+        response.close()
+    def test_ods_download_route_requires_authentication(self):
+        """Verifie que le telechargement ODS exige un token.
+        Args:
+            Aucun.
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+        response = self.client.get("/collections/JeuxVideo/ods/download")
+        self.assertEqual(401, response.status_code)
     def test_add_game_route_returns_created_item(self):
         """Verifie l'endpoint d'ajout d'un jeu.
         Args:

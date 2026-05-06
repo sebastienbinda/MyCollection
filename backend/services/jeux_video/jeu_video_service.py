@@ -8,6 +8,7 @@
 # Date de creation : 2026-05-03
 # Auteurs : Codex et Binda Sébastien
 #
+import os
 from typing import Any, Optional
 
 from models import JeuVideo
@@ -330,6 +331,18 @@ class JeuVideoService:
         """
 
         return self.image_reader.get_platform_image(platform)
+
+    def get_ods_download(self) -> tuple[str, str]:
+        """Retourne le chemin et le nom du fichier ODS a telecharger.
+
+        Args:
+            Aucun.
+
+        Returns:
+            tuple[str, str]: Chemin absolu du fichier ODS et nom de fichier.
+        """
+
+        return self.ods_path, os.path.basename(self.ods_path)
 
     def _build_game_payload(self, payload: dict[str, Any], game_name: str) -> dict[str, Any]:
         """Construit le dictionnaire de jeu nettoye pour l'ecriture ODS.

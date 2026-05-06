@@ -15,6 +15,7 @@ import AppRouting from "./appRouting";
 import AppFrame from "./components/AppFrame";
 import AppViewSwitch from "./components/AppViewSwitch";
 import useBackendActionPermissions from "./hooks/useBackendActionPermissions";
+import useOdsDownload from "./hooks/useOdsDownload";
 import usePlatformGameMutations from "./hooks/usePlatformGameMutations";
 import useWishlistGameMutations from "./hooks/useWishlistGameMutations";
 import JeuxVideoApi from "./services/JeuxVideoApi";
@@ -72,6 +73,7 @@ function App() {
   const reloadGames = () => setGamesReloadKey((previous) => previous + 1);
   const gameMutations = usePlatformGameMutations(selectedPlatform, reloadOds, reloadGames);
   const wishlistMutations = useWishlistGameMutations(reloadOds, reloadGames);
+  const odsDownload = useOdsDownload();
   /**
    * Synchronise l'URL avec la plateforme selectionnee.
    *
@@ -454,6 +456,8 @@ function App() {
         isLoadingHome, isSearchingGames, hasSearchedGames,
         homeSearchQuery, homeSearchResults, homeSearchError,
         cacheResetMessage, cacheResetError, isResettingCache,
+        downloadError: odsDownload.downloadError,
+        isDownloadingOds: odsDownload.isDownloadingOds,
         gameForm, addGameColumnValues, addGameError, addGameMessage, isAddingGame,
         namedGames, columns, valuesByColumn, columnFilters, sortConfig,
         sortedGames, filteredGames, isLoadingGames,
@@ -468,7 +472,9 @@ function App() {
         isLoadingPlatforms,
         actionPermissions,
         openAddGamePage, openWishlist, openPlatform, setHomeSearchQuery, logout: JeuxVideoApi.confirmAndClearAccessToken,
-        searchGamesByName, closeHomeSearch, resetOdsCache, goHome,
+        searchGamesByName, closeHomeSearch, resetOdsCache,
+        downloadOdsFile: odsDownload.downloadOdsFile,
+        goHome,
         submitNewGame, updateGameFormValue, addWishlistGameToPlatform,
         deleteWishlistGame, toggleSort, setColumnFilters,
         openEditGame: gameMutations.openEditGame,

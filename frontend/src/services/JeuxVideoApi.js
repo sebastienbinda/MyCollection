@@ -214,6 +214,55 @@ class JeuxVideoApi {
   }
 
   /**
+   * Telecharge le fichier ODS de la collection.
+   *
+   * @param {void} Aucun - Appelle l'endpoint protege de telechargement.
+   * @returns {Promise<void>} Declenche le telechargement du fichier.
+   */
+  static async downloadOdsFile() {
+    const response = await fetch("/collections/JeuxVideo/ods/download", {
+      headers: this.getAuthorizationHeaders(),
+    });
+    if (!response.ok) {
+      const data = await this.parseJsonResponse(response, "Impossible de telecharger le fichier ODS.");
+      throw new Error(data.error || "Impossible de telecharger le fichier ODS.");
+    }
+    const blob = await response.blob();
+    const filename = this.getDownloadFilename(response) || "JeuxVideo.ods";
+    this.saveBlob(blob, filename);
+  }
+
+  /**
+   * Extrait le nom de fichier depuis l'en-tete de telechargement.
+   *
+   * @param {Response} response - Reponse HTTP de telechargement.
+   * @returns {string} Nom de fichier extrait, ou chaine vide.
+   */
+  static getDownloadFilename(response) {
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    return match ? match[1] : "";
+  }
+
+  /**
+   * Sauvegarde un Blob via un lien temporaire.
+   *
+   * @param {Blob} blob - Contenu binaire a sauvegarder.
+   * @param {string} filename - Nom de fichier propose.
+   * @returns {void} Declenche le telechargement navigateur.
+   */
+  static saveBlob(blob, filename) {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  }
+
+  /**
    * Retourne le token Bearer stocke cote navigateur.
    *
    * @param {void} Aucun - Lit `localStorage` si disponible.
