@@ -13,6 +13,7 @@
  * Description : routeur de vues React pour l'application jeux video.
  */
 import AddGameView from "./AddGameView";
+import AdminDashboardView from "./AdminDashboardView";
 import AuthView from "./AuthView";
 import HomeView from "./HomeView";
 import PlatformDetailView from "./PlatformDetailView";
@@ -41,6 +42,10 @@ class AppViewSwitch {
       return this.renderAuth(props);
     }
 
+    if (props.currentView === "adminDashboard") {
+      return this.renderAdminDashboard(props);
+    }
+
     if (props.currentView === "wishlist") {
       return this.renderWishlist(props);
     }
@@ -67,22 +72,40 @@ class AppViewSwitch {
         homeSearchQuery={props.homeSearchQuery}
         homeSearchResults={props.homeSearchResults}
         homeSearchError={props.homeSearchError}
-        cacheResetMessage={props.cacheResetMessage}
-        cacheResetError={props.cacheResetError}
-        isResettingCache={props.isResettingCache}
-        downloadError={props.downloadError}
-        isDownloadingOds={props.isDownloadingOds}
-        canAddGame={props.actionPermissions.canAddGame}
-        canResetCache={props.actionPermissions.canResetCache}
-        canDownloadOds={props.actionPermissions.canDownloadOds}
         isAuthenticated={props.actionPermissions.isAuthenticated}
-        onAddGame={props.openAddGamePage}
+        authenticatedUsername={props.authenticatedUsername}
+        onOpenAdminDashboard={props.openAdminDashboard}
         onLogout={props.logout}
         onOpenWishlist={props.openWishlist}
         onOpenPlatform={props.openPlatform}
         onSearchQueryChange={props.setHomeSearchQuery}
         onSearchSubmit={props.searchGamesByName}
         onCloseSearch={props.closeHomeSearch}
+      />
+    );
+  }
+
+  /**
+   * Rend le tableau de bord administrateur.
+   *
+   * @param {Object} props - Etat et callbacks d'administration.
+   * @returns {import("react").JSX.Element} Vue d'administration.
+   */
+  static renderAdminDashboard(props) {
+    return (
+      <AdminDashboardView
+        username={props.authenticatedUsername}
+        platforms={props.platforms}
+        canAddGame={props.actionPermissions.canAddGame}
+        canResetCache={props.actionPermissions.canResetCache}
+        canDownloadOds={props.actionPermissions.canDownloadOds}
+        cacheResetMessage={props.cacheResetMessage}
+        cacheResetError={props.cacheResetError}
+        isResettingCache={props.isResettingCache}
+        downloadError={props.downloadError}
+        isDownloadingOds={props.isDownloadingOds}
+        onBack={props.goHome}
+        onAddGame={props.openAddGamePage}
         onResetCache={props.resetOdsCache}
         onDownloadOds={props.downloadOdsFile}
       />

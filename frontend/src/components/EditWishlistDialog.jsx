@@ -13,6 +13,7 @@
  * Description : composant objet de formulaire modal pour modifier un jeu wishlist.
  */
 import { Component } from "react";
+import DateInputFormatter from "../services/DateInputFormatter";
 
 /**
  * Fenetre modale de modification d'un jeu de liste de souhaits.
@@ -53,8 +54,8 @@ class EditWishlistDialog extends Component {
       "Nom du jeu": source["Nom du jeu"] || "",
       Console: source.Console || source.Plateforme || "",
       Studio: source.Studio || "",
-      "Date de sortie": source["Date de sortie"] || "",
-      "Date d'achat": source["Date d'achat"] || "",
+      "Date de sortie": DateInputFormatter.format(source["Date de sortie"]),
+      "Date d'achat": DateInputFormatter.format(source["Date d'achat"]),
       "Lieu d'achat": source["Lieu d'achat"] || "",
       "Prix d'achat": source["Prix d'achat"] ?? source.Prix ?? "",
     };

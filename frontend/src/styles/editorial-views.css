@@ -317,6 +317,28 @@
   width: min(100%, 42rem);
 }
 
+.authSessionDialog {
+  background: #ffffff;
+  border: 1px solid #dbe4f0;
+  border-radius: 8px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  width: min(100%, 32rem);
+}
+
+.authSessionHeader {
+  align-items: start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.authSessionHeader h2 {
+  margin-bottom: 0;
+}
+
 .editGameDialogHeader {
   align-items: start;
   display: flex;

@@ -263,6 +263,26 @@ td.gameNameColumn {
   white-space: nowrap;
 }
 
+.pageTitleWithIcon {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.projectIcon {
+  border-radius: 8px;
+  flex: 0 0 auto;
+  height: 3.2rem;
+  width: 3.2rem;
+}
+
+.appFooterIcon {
+  border-radius: 5px;
+  height: 1.35rem;
+  width: 1.35rem;
+}
+
 .appFooter {
   align-items: center;
   background: rgba(255, 255, 255, 0.96);
@@ -315,9 +335,18 @@ td.gameNameColumn {
 }
 
 .appFooter a {
+  align-items: center;
   color: #475569;
+  display: inline-flex;
+  gap: 0.35rem;
   font-weight: 700;
   text-decoration: none;
+}
+
+.githubFooterIcon {
+  fill: currentColor;
+  height: 1rem;
+  width: 1rem;
 }
 
 .appFooter a:hover {

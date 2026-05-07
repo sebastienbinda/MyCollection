@@ -109,13 +109,12 @@ La navigation reste volontairement simple et utilise l'URL :
 
 Par defaut, le backend cherche le fichier :
 
-- `~/Documents/JeuxVideo-v2.ods`
-- `~/Documents/Documents/JeuxVideo-v2.ods`
+- `collection.ods` a la racine du projet
 
 Il est aussi possible de forcer le chemin avec la variable :
 
 ```bash
-export JEUXVIDEO_ODS_PATH=/chemin/vers/JeuxVideo-v2.ods
+export JEUXVIDEO_ODS_PATH=/chemin/vers/collection.ods
 ```
 
 Structure attendue :
@@ -267,7 +266,7 @@ Exemple :
 Avant chaque ecriture, une sauvegarde est creee a cote du fichier ODS :
 
 ```text
-JeuxVideo-v2.ods.backup-YYYYMMDDHHMMSS
+collection.ods.backup-YYYYMMDDHHMMSS
 ```
 
 ## Lancement Local
@@ -279,7 +278,7 @@ Le projet peut tourner avec deux conteneurs :
 - `backend` : API Flask exposee uniquement au reseau Docker interne
 - `web` : Nginx qui sert le frontend React compile et proxifie `/api` et `/collections` vers le backend
 
-Le fichier ODS n'est pas copie dans l'image Docker. Le dossier qui le contient est monte dans le conteneur backend sous `/data`, ce qui permet aussi de conserver les sauvegardes `.backup-*` creees lors des modifications.
+Seul le fichier `collection.ods` de la racine du projet est monte dans le conteneur backend, sans monter tout le dossier projet.
 
 Copier le fichier d'exemple d'environnement :
 
@@ -291,8 +290,6 @@ Adapter ensuite `docker/.env` si besoin :
 
 ```bash
 WEB_PORT=8080
-JEUXVIDEO_ODS_HOST_DIR=/Users/sebastien/Documents
-JEUXVIDEO_ODS_FILENAME=JeuxVideo-v2.ods
 ```
 
 Demarrer l'application :

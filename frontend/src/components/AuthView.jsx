@@ -14,6 +14,7 @@
  */
 import { useState } from "react";
 import JeuxVideoApi from "../services/JeuxVideoApi";
+import ProjectIcon from "./ProjectIcon";
 
 /**
  * Page d'authentification backend pour recuperer un token Bearer.
@@ -25,7 +26,12 @@ function AuthView({ isAuthenticated, onBack, onAuthenticated }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("reason") === JeuxVideoApi.expiredSessionQuery
+      ? "Votre session a expire. Veuillez vous reconnecter."
+      : "";
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   /**
@@ -71,7 +77,12 @@ function AuthView({ isAuthenticated, onBack, onAuthenticated }) {
       </button>
       <section className="authHeader">
         <p className="eyebrow">Acces protege</p>
-        <h1>Authentification</h1>
+        <h1>
+          <span className="pageTitleWithIcon">
+            <ProjectIcon />
+            <span>Authentification</span>
+          </span>
+        </h1>
         <p className="subtitle">Connectez-vous pour afficher les actions de mise a jour.</p>
       </section>
 

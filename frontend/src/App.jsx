@@ -13,19 +13,16 @@ import { useEffect, useState } from "react";
 import { filterGames, getStudioCount, sortGames } from "./collectionUtils";
 import AppRouting from "./appRouting";
 import AppFrame from "./components/AppFrame";
+import AuthSessionModal from "./components/AuthSessionModal";
 import AppViewSwitch from "./components/AppViewSwitch";
+import useAuthSessionModal from "./hooks/useAuthSessionModal";
 import useBackendActionPermissions from "./hooks/useBackendActionPermissions";
 import useOdsDownload from "./hooks/useOdsDownload";
 import usePlatformGameMutations from "./hooks/usePlatformGameMutations";
 import useWishlistGameMutations from "./hooks/useWishlistGameMutations";
 import JeuxVideoApi from "./services/JeuxVideoApi";
 const initialGameForm = AppRouting.createInitialGameForm();
-/**
- * Composant racine de l'application React.
- *
- * @param {void} Aucun - Aucun prop n'est attendu.
- * @returns {import("react").JSX.Element} Interface complete de l'application.
- */
+/** Composant racine React. @param {void} Aucun. @returns {import("react").JSX.Element} Interface. */
 function App() {
   const [currentView, setCurrentView] = useState(AppRouting.getViewFromUrl);
   const [homeStats, setHomeStats] = useState(null);
@@ -59,6 +56,7 @@ function App() {
   const [odsReloadKey, setOdsReloadKey] = useState(0);
   const [gamesReloadKey, setGamesReloadKey] = useState(0);
   const [error, setError] = useState("");
+  const authSessionModal = useAuthSessionModal();
 
   const namedGames = games.filter((game) => String(game["Nom du jeu"] || "").trim() !== "");
   const columns = namedGames.length > 0
@@ -69,6 +67,9 @@ function App() {
   const selectedPlatformStats = homeStats?.platforms?.find(
     (platform) => platform.sheet_name === selectedPlatform
   );
+  const authenticatedUsername = actionPermissions.isAuthenticated
+    ? JeuxVideoApi.getAuthenticatedUsername()
+    : "";
   const reloadOds = () => setOdsReloadKey((previous) => previous + 1);
   const reloadGames = () => setGamesReloadKey((previous) => previous + 1);
   const gameMutations = usePlatformGameMutations(selectedPlatform, reloadOds, reloadGames);
@@ -129,6 +130,15 @@ function App() {
       platform: previous.platform || selectedPlatform || platforms[0] || "",
     }));
     window.history.pushState({}, "", "/add-game");
+  };
+
+  /** Ouvre le tableau de bord administrateur.
+   * @param {void} Aucun - Utilise l'etat React et l'historique navigateur.
+   * @returns {void} Affiche la vue d'administration. */
+  const openAdminDashboard = () => {
+    clearDeleteGameFeedback();
+    setCurrentView("adminDashboard");
+    window.history.pushState({}, "", "/admin-dashboard");
   };
   /**
    * Ouvre la vue detail d'une plateforme.
@@ -251,6 +261,10 @@ function App() {
       clearDeleteGameFeedback();
       if (window.location.pathname === "/add-game") {
         setCurrentView("addGame");
+        return;
+      }
+      if (window.location.pathname === "/admin-dashboard") {
+        setCurrentView("adminDashboard");
         return;
       }
       if (window.location.pathname === "/wishlist") {
@@ -455,28 +469,20 @@ function App() {
         currentView, homeStats, platforms, selectedPlatform, error,
         isLoadingHome, isSearchingGames, hasSearchedGames,
         homeSearchQuery, homeSearchResults, homeSearchError,
-        cacheResetMessage, cacheResetError, isResettingCache,
-        downloadError: odsDownload.downloadError,
-        isDownloadingOds: odsDownload.isDownloadingOds,
-        gameForm, addGameColumnValues, addGameError, addGameMessage, isAddingGame,
-        namedGames, columns, valuesByColumn, columnFilters, sortConfig,
-        sortedGames, filteredGames, isLoadingGames,
-        isSavingGame: gameMutations.isSavingGame,
-        editingGame: gameMutations.editingGame,
+        cacheResetMessage, cacheResetError, isResettingCache, gameForm,
+        addGameColumnValues, addGameError, addGameMessage, isAddingGame, namedGames,
+        columns, valuesByColumn, columnFilters, sortConfig, sortedGames, filteredGames,
+        isLoadingGames, isSavingGame: gameMutations.isSavingGame, editingGame: gameMutations.editingGame,
         editingWishlistGame: wishlistMutations.editingWishlistGame,
         isSavingWishlistGame: wishlistMutations.isSavingWishlistGame,
-        selectedPlatformStats,
-        studioCount: getStudioCount(namedGames),
-        deleteGameMessage: gameMutations.deleteGameMessage,
-        deleteGameError: gameMutations.deleteGameError,
-        isLoadingPlatforms,
-        actionPermissions,
-        openAddGamePage, openWishlist, openPlatform, setHomeSearchQuery, logout: JeuxVideoApi.confirmAndClearAccessToken,
-        searchGamesByName, closeHomeSearch, resetOdsCache,
-        downloadOdsFile: odsDownload.downloadOdsFile,
-        goHome,
-        submitNewGame, updateGameFormValue, addWishlistGameToPlatform,
-        deleteWishlistGame, toggleSort, setColumnFilters,
+        selectedPlatformStats, studioCount: getStudioCount(namedGames),
+        deleteGameMessage: gameMutations.deleteGameMessage, deleteGameError: gameMutations.deleteGameError,
+        isLoadingPlatforms, actionPermissions, authenticatedUsername,
+        downloadError: odsDownload.downloadError, isDownloadingOds: odsDownload.isDownloadingOds,
+        openAddGamePage, openAdminDashboard, openWishlist, openPlatform, setHomeSearchQuery,
+        logout: JeuxVideoApi.confirmAndClearAccessToken, searchGamesByName, closeHomeSearch,
+        resetOdsCache, downloadOdsFile: odsDownload.downloadOdsFile, goHome, submitNewGame,
+        updateGameFormValue, addWishlistGameToPlatform, deleteWishlistGame, toggleSort, setColumnFilters,
         openEditGame: gameMutations.openEditGame,
         saveEditedGame: gameMutations.saveEditedGame,
         cancelEditGame: gameMutations.cancelEditGame,
@@ -485,6 +491,7 @@ function App() {
         cancelEditWishlistGame: wishlistMutations.cancelEditWishlistGame,
         deletePlatformGame: gameMutations.deletePlatformGame,
       })}
+      <AuthSessionModal isOpen={authSessionModal.isOpen} onAuthenticated={authSessionModal.markAuthenticated} onClose={authSessionModal.close} />
     </AppFrame>
   );
 }

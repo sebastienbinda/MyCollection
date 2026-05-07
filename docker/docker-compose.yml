@@ -18,7 +18,7 @@ services:
     environment:
       APP_HOME_TITLE: ${APP_HOME_TITLE:-Ma collection}
       BACKEND_PORT: "7777"
-      JEUXVIDEO_ODS_PATH: /data/${JEUXVIDEO_ODS_FILENAME:-JeuxVideo-v2.ods}
+      JEUXVIDEO_ODS_PATH: /project/collection.ods
       ODS_FORMULA_RECALCULATION: required
       AUTH_TOKEN_TTL_SECONDS: ${AUTH_TOKEN_TTL_SECONDS:-3600}
       AUTH_USERNAME: ${AUTH_USERNAME:-admin}
@@ -26,7 +26,7 @@ services:
       AUTH_PASSWORD_ENCRYPTED: ${AUTH_PASSWORD_ENCRYPTED:-}
       AUTH_SECRET_KEY_ENCRYPTED: ${AUTH_SECRET_KEY_ENCRYPTED:-}
     volumes:
-      - ${JEUXVIDEO_ODS_HOST_DIR:-/Users/sebastien/Documents/Documents}:/data
+      - ../collection.ods:/project/collection.ods
     expose:
       - "7777"
     restart: unless-stopped

@@ -9,6 +9,8 @@
  * Date de creation : 2026-05-03
  * Auteurs : Codex et Binda Sébastien
  */
+import ProjectIcon from "./ProjectIcon";
+
 /**
  * Page contenant le formulaire d'ajout d'un jeu dans le fichier ODS.
  *
@@ -34,7 +36,12 @@ function AddGameView({
       </button>
       <section className="addGameHeader">
         <p className="eyebrow">Nouveau jeu</p>
-        <h1>Ajouter un jeu</h1>
+        <h1>
+          <span className="pageTitleWithIcon">
+            <ProjectIcon />
+            <span>Ajouter un jeu</span>
+          </span>
+        </h1>
         <p className="subtitle">
           Le jeu sera ajoute dans l'onglet de la plateforme selectionnee, en conservant
           le style du fichier ODS.

@@ -17,6 +17,7 @@ import { formatCellValue, formatNumber } from "../collectionUtils";
 import WishlistTransferService from "../services/WishlistTransferService";
 import EditWishlistDialog from "./EditWishlistDialog";
 import GameTable from "./GameTable";
+import ProjectIcon from "./ProjectIcon";
 /**
  * Vue dediee a l'onglet ODS `Liste de souhaits`.
  */
@@ -281,7 +282,12 @@ class WishlistView extends Component {
         <section className="platformDetailHero wishlistHero">
           <div className="platformDetailContent">
             <p className="eyebrow">Souhaits</p>
-            <h1>Liste de souhaits</h1>
+            <h1>
+              <span className="pageTitleWithIcon">
+                <ProjectIcon />
+                <span>Liste de souhaits</span>
+              </span>
+            </h1>
             <p className="subtitle">Jeux reperes avant ajout a la collection.</p>
           </div>
         </section>

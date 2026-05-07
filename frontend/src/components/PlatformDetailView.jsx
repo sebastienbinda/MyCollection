@@ -15,6 +15,7 @@ import {
 } from "../collectionUtils";
 import EditGameDialog from "./EditGameDialog";
 import GameTable from "./GameTable";
+import ProjectIcon from "./ProjectIcon";
 
 /**
  * Page de detail d'une plateforme avec statistiques, filtres et tableau de jeux.
@@ -91,7 +92,12 @@ function PlatformDetailView({
       >
         <div className="platformDetailContent">
           <p className="eyebrow">Plateforme</p>
-          <h1>{selectedPlatformStats?.name || selectedPlatform || "CloudCollectionApp"}</h1>
+          <h1>
+            <span className="pageTitleWithIcon">
+              <ProjectIcon />
+              <span>{selectedPlatformStats?.name || selectedPlatform || "CloudCollectionApp"}</span>
+            </span>
+          </h1>
           <p className="subtitle">Filtrer la liste par plateforme (onglet ODS)</p>
         </div>
         <div className="platformDetailStats" aria-label="Statistiques de la plateforme">

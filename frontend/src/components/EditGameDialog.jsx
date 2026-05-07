@@ -13,6 +13,7 @@
  * Description : composant objet de formulaire modal pour modifier un jeu de plateforme.
  */
 import { Component } from "react";
+import DateInputFormatter from "../services/DateInputFormatter";
 
 /**
  * Fenetre modale de modification d'un jeu existant.
@@ -52,8 +53,8 @@ class EditGameDialog extends Component {
     return {
       "Nom du jeu": source["Nom du jeu"] || "",
       Studio: source.Studio || "",
-      "Date de sortie": source["Date de sortie"] || "",
-      "Date d'achat": source["Date d'achat"] || "",
+      "Date de sortie": DateInputFormatter.format(source["Date de sortie"]),
+      "Date d'achat": DateInputFormatter.format(source["Date d'achat"]),
       "Lieu d'achat": source["Lieu d'achat"] || "",
       Note: source.Note || "",
       "Prix d'achat": source["Prix d'achat"] ?? "",

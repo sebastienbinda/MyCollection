@@ -9,6 +9,7 @@
 # Auteurs : Codex et Binda Sébastien
 #
 import os
+from pathlib import Path
 from typing import Optional
 
 
@@ -44,8 +45,7 @@ class OdsPathResolver:
         env_path = os.getenv("JEUXVIDEO_ODS_PATH")
         candidate_paths = [
             env_path,
-            "~/Documents/JeuxVideo-v2.ods",
-            "~/Documents/Documents/JeuxVideo-v2.ods",
+            self._get_project_collection_path(),
         ]
         resolved_path = next(
             (
@@ -57,6 +57,18 @@ class OdsPathResolver:
         )
         if not resolved_path:
             raise FileNotFoundError(
-                "ODS file not found. Configure JEUXVIDEO_ODS_PATH to point to JeuxVideo-v2.ods."
+                "ODS file not found. Configure JEUXVIDEO_ODS_PATH or add collection.ods at project root."
             )
         return resolved_path
+
+    def _get_project_collection_path(self) -> str:
+        """Retourne le chemin du fichier collection.ods embarque dans le projet.
+
+        Args:
+            Aucun.
+
+        Returns:
+            str: Chemin absolu attendu pour `collection.ods`.
+        """
+
+        return str(Path(__file__).resolve().parents[3] / "collection.ods")

@@ -1,4 +1,6 @@
 import { formatCellValue, formatCurrency, formatNumber } from "../collectionUtils";
+import AuthStatusMenu from "./AuthStatusMenu";
+import ProjectIcon from "./ProjectIcon";
 
 /**
  * Page d'accueil avec statistiques, recherche globale et cartes plateformes.
@@ -17,24 +19,15 @@ function HomeView({
   homeSearchQuery,
   homeSearchResults,
   homeSearchError,
-  cacheResetMessage,
-  cacheResetError,
-  isResettingCache,
-  downloadError,
-  isDownloadingOds,
-  canAddGame,
-  canResetCache,
-  canDownloadOds,
   isAuthenticated,
-  onAddGame,
+  authenticatedUsername,
+  onOpenAdminDashboard,
   onLogout,
   onOpenWishlist,
   onOpenPlatform,
   onSearchQueryChange,
   onSearchSubmit,
   onCloseSearch,
-  onResetCache,
-  onDownloadOds,
 }) {
   const topPlatform = homeStats?.platforms?.reduce((top, platform) => {
     if (!top || (platform.games_count || 0) > (top.games_count || 0)) {
@@ -45,34 +38,20 @@ function HomeView({
   return (
     <main className="appShell">
       <header className="pageHeader">
-        {isAuthenticated ? (
-          <button
-            className="authButtonLink pageHeaderAuthButton authButtonConnected"
-            type="button"
-            aria-label="Se deconnecter"
-            title="Se deconnecter"
-            onClick={onLogout}
-          >
-            <svg aria-hidden="true" className="authStatusIcon" viewBox="0 0 24 24">
-              <path d="M12 2a5 5 0 0 1 5 5v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v3h6V7a3 3 0 0 0-3-3Zm1 11.73A2 2 0 1 0 11 15.73V19h2v-3.27Z" />
-            </svg>
-          </button>
-        ) : (
-          <a
-            className="authButtonLink pageHeaderAuthButton"
-            href="/auth"
-            aria-label="Connexion"
-            title="Connexion"
-          >
-            <svg aria-hidden="true" className="authStatusIcon" viewBox="0 0 24 24">
-              <path d="M12 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 12c4.42 0 8 2.24 8 5v2H4v-2c0-2.76 3.58-5 8-5Z" />
-            </svg>
-            <span>Connexion</span>
-          </a>
-        )}
+        {AuthStatusMenu.render({
+          isAuthenticated,
+          username: authenticatedUsername,
+          onOpenAdminDashboard,
+          onLogout,
+        })}
         <div>
           <p className="eyebrow">Collection personnelle</p>
-          <h1>{homeStats?.title || "Ma collection"}</h1>
+          <h1>
+            <span className="pageTitleWithIcon">
+              <ProjectIcon />
+              <span>{homeStats?.title || "Ma collection"}</span>
+            </span>
+          </h1>
           <p className="pageHeaderDateSummary">
             <span>Premier jeu : {formatCellValue("Date", homeStats?.first_game_date)}</span>
             <span>Dernier jeu : {formatCellValue("Date", homeStats?.last_game_date)}</span>
@@ -81,34 +60,9 @@ function HomeView({
         </div>
         <div className="pageHeaderActionArea">
           <div className="pageHeaderActions">
-            {canAddGame ? (
-              <button type="button" onClick={onAddGame} disabled={platforms.length === 0}>
-                Ajouter un jeu
-              </button>
-            ) : null}
             <button className="secondaryButton" type="button" onClick={onOpenWishlist}>
               Liste de souhaits
             </button>
-            {canResetCache ? (
-              <button
-                className="secondaryButton"
-                type="button"
-                onClick={onResetCache}
-                disabled={isResettingCache}
-              >
-                {isResettingCache ? "Reset..." : "Reset cache"}
-              </button>
-            ) : null}
-            {canDownloadOds ? (
-              <button
-                className="downloadOdsButton"
-                type="button"
-                onClick={onDownloadOds}
-                disabled={isDownloadingOds}
-              >
-                {isDownloadingOds ? "Telechargement..." : "Telecharger ODS"}
-              </button>
-            ) : null}
             <button
               className="secondaryButton"
               type="button"
@@ -122,9 +76,6 @@ function HomeView({
       </header>
 
       {error ? <p className="error">{error}</p> : null}
-      {cacheResetError ? <p className="error">{cacheResetError}</p> : null}
-      {downloadError ? <p className="error">{downloadError}</p> : null}
-      {cacheResetMessage ? <p className="success">{cacheResetMessage}</p> : null}
       {isLoadingHome ? <p>Chargement des statistiques...</p> : null}
 
       {!isLoadingHome && homeStats ? (
