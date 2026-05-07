@@ -111,6 +111,16 @@ Par defaut, le backend cherche le fichier :
 
 - `collection.ods` a la racine du projet
 
+Un fichier exemple versionnable est fourni :
+
+- `collection-example.ods`
+
+Il peut etre regenere avec :
+
+```bash
+backend/.venv/bin/python scripts/generate_collection_example.py
+```
+
 Il est aussi possible de forcer le chemin avec la variable :
 
 ```bash
@@ -278,7 +288,9 @@ Le projet peut tourner avec deux conteneurs :
 - `backend` : API Flask exposee uniquement au reseau Docker interne
 - `web` : Nginx qui sert le frontend React compile et proxifie `/api` et `/collections` vers le backend
 
-Seul le fichier `collection.ods` de la racine du projet est monte dans le conteneur backend, sans monter tout le dossier projet.
+Seul le fichier ODS defini par `JEUXVIDEO_ODS_FILE` est monte dans le conteneur backend, sans monter tout son dossier parent.
+Dans `docker/.env`, la valeur locale pointe vers `../collection.ods`.
+Dans `docker/.env.example`, la valeur versionnable pointe vers `../collection-example.ods`.
 
 Copier le fichier d'exemple d'environnement :
 
@@ -290,6 +302,7 @@ Adapter ensuite `docker/.env` si besoin :
 
 ```bash
 WEB_PORT=8080
+JEUXVIDEO_ODS_FILE=../collection.ods
 ```
 
 Demarrer l'application :

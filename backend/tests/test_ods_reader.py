@@ -101,6 +101,25 @@ class OdsReaderFallbackTest(unittest.TestCase):
         self.assertEqual(1234, switch_stats["total_price"])
         self.assertEqual(12.46, switch_stats["average_price"])
 
+    def test_home_stats_versions_platform_image_urls(self):
+        """Verifie que les URLs d'images changent avec le fichier ODS.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident la presence du jeton de cache.
+        """
+
+        with patch("services.ods.ods_reader.os.stat") as stat_mock:
+            stat_mock.return_value.st_mtime_ns = 123456
+            stat_mock.return_value.st_size = 789
+            with patch("services.ods.ods_reader.pd.read_excel", return_value=self._home_dataframe()):
+                stats = self.reader.get_home_stats()
+
+        image_url = stats["platforms"][0]["image_url"]
+        self.assertEqual("/collections/JeuxVideo/platform-image/Switch?v=123456-789", image_url)
+
     def test_home_title_can_be_configured_from_environment(self):
         """Verifie la configuration du titre d'accueil.
 

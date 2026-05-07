@@ -26,7 +26,7 @@ services:
       AUTH_PASSWORD_ENCRYPTED: ${AUTH_PASSWORD_ENCRYPTED:-}
       AUTH_SECRET_KEY_ENCRYPTED: ${AUTH_SECRET_KEY_ENCRYPTED:-}
     volumes:
-      - ../collection.ods:/project/collection.ods
+      - ${JEUXVIDEO_ODS_FILE:-../collection-example.ods}:/project/collection.ods
     expose:
       - "7777"
     restart: unless-stopped

@@ -358,12 +358,14 @@ def get_jeux_video_platform_image(platform):
     """
     try:
         image_bytes, mime_type, filename = JeuVideoService().get_platform_image(platform)
-        return send_file(
+        response = send_file(
             BytesIO(image_bytes),
             mimetype=mime_type,
             download_name=filename,
-            max_age=3600,
+            max_age=0,
         )
+        response.headers["Cache-Control"] = "no-store, max-age=0"
+        return response
     except FileNotFoundError as exc:
         return jsonify({"error": str(exc)}), 500
     except ValueError as exc:

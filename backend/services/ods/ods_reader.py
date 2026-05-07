@@ -190,7 +190,7 @@ class OdsReader:
                 {
                     "name": platform,
                     "sheet_name": platform,
-                    "image_url": f"/collections/JeuxVideo/platform-image/{platform}",
+                    "image_url": self._build_platform_image_url(platform),
                     "has_image": platform in image_paths_by_sheet,
                     **computed_stats,
                 }
@@ -271,12 +271,40 @@ class OdsReader:
         return {
             "name": platform_name,
             "sheet_name": sheet_name,
-            "image_url": f"/collections/JeuxVideo/platform-image/{sheet_name}",
+            "image_url": self._build_platform_image_url(sheet_name),
             "games_count": SheetValueFormatter.serialize(row.get("Nombre de jeux")),
             "total_price": SheetValueFormatter.serialize(row.get("Prix")),
             "average_price": SheetValueFormatter.serialize(row.get("Prix moyen")),
             "has_image": sheet_name in image_paths_by_sheet,
         }
+
+    def _build_platform_image_url(self, sheet_name: str) -> str:
+        """Construit l'URL versionnee de l'image d'une plateforme.
+
+        Args:
+            sheet_name (str): Nom de l'onglet plateforme.
+
+        Returns:
+            str: URL image avec un parametre de cache base sur le fichier ODS.
+        """
+
+        return f"/collections/JeuxVideo/platform-image/{sheet_name}?v={self._build_image_cache_token()}"
+
+    def _build_image_cache_token(self) -> str:
+        """Construit un jeton de cache base sur l'etat du fichier ODS.
+
+        Args:
+            Aucun.
+
+        Returns:
+            str: Jeton stable tant que le fichier ODS ne change pas.
+        """
+
+        try:
+            stat_result = os.stat(self.ods_path)
+            return f"{stat_result.st_mtime_ns}-{stat_result.st_size}"
+        except OSError:
+            return "missing"
 
     def _merge_platform_stats(
         self,
