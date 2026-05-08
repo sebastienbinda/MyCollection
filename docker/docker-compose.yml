@@ -13,6 +13,8 @@ name: cloudcollectionapp
 services:
   traefik:
     image: traefik:v3.7
+    profiles:
+      - "online"
     command:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
@@ -36,7 +38,10 @@ services:
       - frontend
     restart: unless-stopped
 
-  backend:
+  backend:  
+    profiles:
+      - "local"
+      - "online"
     build:
       context: ..
       dockerfile: docker/backend.Dockerfile
@@ -69,6 +74,8 @@ services:
     restart: unless-stopped
 
   database:
+    profiles:
+      - "local"
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-cloudcollectionapp}
@@ -87,7 +94,23 @@ services:
       - backend_data
     restart: unless-stopped
 
-  web:
+  web-local:
+    profiles:
+      - "local"
+    build:
+      context: ..
+      dockerfile: docker/frontend.Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    networks:
+      - frontend
+    restart: unless-stopped
+
+  web-online:
+    profiles:
+      - "online"
     build:
       context: ..
       dockerfile: docker/frontend.Dockerfile

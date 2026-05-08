@@ -22,13 +22,17 @@ while getopts "dh" option; do
     d)
       STOP_MODE="docker"
       ;;
+    p)
+      PROFILE="online"
+      ;;
     h)
-      echo "Usage: ./stop.sh [-d]"
+      echo "Usage: ./stop.sh [-d] [-p]"
       echo "  -d  Arrete la version Docker avec Docker Compose."
+      echo "  -p  Arrete la version Docker avec Docker Compose avec le profil online."
       exit 0
       ;;
     *)
-      echo "Usage: ./stop.sh [-d]"
+      echo "Usage: ./stop.sh [-d] [-p]"
       exit 1
       ;;
   esac
@@ -62,7 +66,11 @@ stop_docker() {
   # Parametres : aucun.
   # Retour : void, arrete la stack Docker Compose.
   echo "Stopping Docker stack..."
-  docker compose -f "$DOCKER_COMPOSE_FILE" down
+  if [ "$PROFILE" = "online" ]; then
+    docker compose -f "$DOCKER_COMPOSE_FILE" --profile "online" down
+  else
+    docker compose -f "$DOCKER_COMPOSE_FILE" --profile "local" down
+  fi
 }
 
 if [ "$STOP_MODE" = "docker" ]; then

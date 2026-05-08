@@ -22,13 +22,17 @@ while getopts "dh" option; do
     d)
       START_MODE="docker"
       ;;
+    p)
+      PROFILE="online"
+      ;;
     h)
-      echo "Usage: ./start.sh [-d]"
+      echo "Usage: ./start.sh [-d] [-p]"
       echo "  -d  Build et demarre la version Docker en recreant les conteneurs."
+      echo "  -p  Build et demarre la version Docker en recreant les conteneurs avec le profil online."
       exit 0
       ;;
     *)
-      echo "Usage: ./start.sh [-d]"
+      echo "Usage: ./start.sh [-d] [-p]"
       exit 1
       ;;
   esac
@@ -58,7 +62,11 @@ start_docker() {
   # Parametres : aucun, utilise WEB_PORT et les variables Docker Compose existantes.
   # Retour : void, demarre la stack Docker Compose.
   echo "Building and starting Docker stack on web port ${WEB_PORT}..."
-  WEB_PORT="$WEB_PORT" docker compose -f "$DOCKER_COMPOSE_FILE" up -d --build --force-recreate
+  if [ "$PROFILE" = "online" ]; then
+    WEB_PORT="$WEB_PORT" docker compose -f "$DOCKER_COMPOSE_FILE" --profile "$PROFILE" up -d --build --force-recreate
+  else
+    WEB_PORT="$WEB_PORT" docker compose -f "$DOCKER_COMPOSE_FILE" --profile "local" up -d --build --force-recreate
+  fi
 }
 
 if [ "$START_MODE" = "docker" ]; then
