@@ -14,9 +14,12 @@
 > **Note IA**  
 > Le code de ce projet a ete genere et modifie avec l'aide de **Codex**, l'agent de developpement d'**OpenAI** base sur **GPT-5**.
 
-Application web personnelle pour consulter, rechercher et maintenir une collection de jeux video stockee dans un fichier LibreOffice Calc `.ods`.
+Application web personnelle pour consulter, rechercher et maintenir une collection
+de jeux video stockee dans un fichier LibreOffice Calc `.ods`.
 
-Le projet transforme un fichier ODS existant en interface web : tableau de bord, statistiques par plateforme, recherche globale de jeux, consultation par onglet plateforme et formulaire d'ajout de nouveaux jeux.
+Le projet transforme un fichier ODS existant en interface web : tableau de bord,
+statistiques par plateforme, recherche globale, consultation par onglet,
+liste de souhaits, administration et formulaires d'ajout ou de modification.
 
 ## Objectif
 
@@ -27,6 +30,9 @@ L'objectif est de garder le fichier ODS comme source de verite tout en offrant u
 - filtrer les jeux par colonnes
 - rechercher un jeu par nom sur toutes les plateformes
 - ajouter un jeu dans le bon onglet du fichier ODS en conservant le style existant
+- suivre les jeux de la liste de souhaits
+- modifier ou supprimer des lignes existantes apres authentification
+- preparer les futures fonctionnalites stockees en base PostgreSQL
 
 ## Fonctionnalites
 
@@ -36,8 +42,14 @@ L'objectif est de garder le fichier ODS comme source de verite tout en offrant u
 - Page plateforme accessible directement par URL, par exemple `/?platform=Switch`
 - Tableau filtrable par colonne, avec filtres specifiques pour les dates et studios
 - Bandeau plateforme avec image, nombre de jeux, valeur, prix moyen et nombre de studios
-- Page `/add-game` avec formulaire d'ajout
-- Suggestions de valeurs existantes pour `Studio` et `Version`
+- Page `/wishlist` avec tri par plateforme puis nom du jeu
+- Page `/add-game` avec formulaire d'ajout vers la collection ou la liste de souhaits
+- Suggestions de valeurs fusionnees entre collection et liste de souhaits, triees alphabetiquement
+- Validation backend des champs avant ajout ou modification
+- Modification et suppression des jeux de collection ou de liste de souhaits
+- Tableau de bord administrateur avec telechargement ODS et reinitialisation du cache
+- Authentification Bearer pour les actions qui modifient les donnees
+- Barres de progression pendant les chargements et actions longues
 - Ecriture backend dans le fichier ODS avec sauvegarde automatique avant modification
 
 ## Architecture Technique
@@ -63,21 +75,27 @@ Technologies :
 Fichiers principaux :
 
 - `backend/app.py` : routes HTTP Flask
-- `backend/services/jeu_video_service.py` : lecture, recherche, extraction d'images et ecriture du fichier ODS
+- `backend/services/jeux_video/jeu_video_service.py` : orchestration de la collection jeux video
+- `backend/services/jeux_video/add_game_choice_service.py` : fusion et tri des choix du formulaire d'ajout
+- `backend/services/ods/` : lecture, ecriture, sauvegarde et validation du fichier ODS
+- `backend/services/auth/` : emission et validation des tokens Bearer
+- `backend/services/validation/` : validation des payloads collection et liste de souhaits
 - `backend/models/jeu_video.py` : normalisation des lignes de jeux video
 - `backend/models/collection_types.py` : types de collections supportes
 
-Le service `JeuVideoService` lit les donnees dans le fichier ODS. Pour les onglets de plateformes, les colonnes de jeux sont lues dans la plage logique `F:M`, avec la ligne d'en-tete a l'index 5.
+Le service `JeuVideoService` lit les donnees dans le fichier ODS. Pour les
+onglets de plateformes, les colonnes de jeux sont lues dans la plage logique
+`F:M`, avec la ligne d'en-tete a l'index 5.
 
-Pour l'ajout d'un jeu, le backend :
+Pour chaque ecriture dans le fichier ODS, le backend :
 
 - cree une sauvegarde du fichier ODS original
 - ouvre le fichier ODS comme archive ZIP
 - modifie `content.xml`
-- trouve l'onglet de la plateforme selectionnee
-- clone une ligne de jeu existante pour conserver le style
-- remplit les cellules du nouveau jeu
+- trouve l'onglet cible, plateforme ou `Liste de souhaits`
+- clone ou remplace les cellules en conservant les styles existants
 - reecrit le fichier ODS
+- invalide le cache de lecture
 
 ### Frontend
 
@@ -90,20 +108,29 @@ Technologies :
 Fichiers principaux :
 
 - `frontend/src/App.jsx` : application React, navigation, pages et appels API
-- `frontend/src/styles.css` : styles de l'interface
+- `frontend/src/components/` : vues, dialogues et composants reutilisables
+- `frontend/src/services/` : clients API et services frontend
+- `frontend/src/hooks/` : logique React partagee pour auth, mutations et telechargement
+- `frontend/src/styles.css` et `frontend/src/styles/` : styles de l'interface
 - `frontend/vite.config.js` : configuration Vite et proxy backend
 
-L'application gere trois vues principales :
+L'application gere les vues principales suivantes :
 
 - accueil
 - detail d'une plateforme
+- liste de souhaits
 - ajout d'un jeu
+- authentification
+- administration
 
 La navigation reste volontairement simple et utilise l'URL :
 
 - `/` : accueil
 - `/?platform=Playstation%204` : vue d'une plateforme
+- `/wishlist` : liste de souhaits
 - `/add-game` : formulaire d'ajout
+- `/auth` : authentification
+- `/admin-dashboard` : administration
 
 ## Fichier ODS
 
@@ -127,10 +154,22 @@ Il est aussi possible de forcer le chemin avec la variable :
 export JEUXVIDEO_ODS_PATH=/chemin/vers/collection.ods
 ```
 
+Variables utiles pour l'ecriture :
+
+```bash
+export JEUXVIDEO_ODS_TMP_DIR=/chemin/temporaire
+export JEUXVIDEO_ODS_BACKUP_DIR=/chemin/backup
+export ODS_FORMULA_RECALCULATION=required
+```
+
+Dans Docker, les fichiers temporaires sont places dans un `tmpfs` et les
+sauvegardes dans un montage dedie afin de ne pas devoir monter tout le dossier
+parent de la collection.
+
 Structure attendue :
 
 - onglet `Accueil` : statistiques par plateforme
-- onglet `Liste de souhaits` : ignore dans la navigation principale
+- onglet `Liste de souhaits` : suivi des jeux souhaites ou precommandes
 - un onglet par plateforme : `Playstation`, `Playstation 4`, `Switch`, etc.
 
 Les images affichees dans l'interface sont extraites directement des images embarquees dans les onglets du fichier ODS.
@@ -160,16 +199,20 @@ Configurer les valeurs avec `AUTH_USERNAME`, `AUTH_PASSWORD_ENCRYPTED`,
 Les anciennes variables `AUTH_PASSWORD` et `AUTH_SECRET_KEY` restent acceptees
 en secours local, mais le fichier `.env` doit utiliser les valeurs chiffrees.
 
-Generer un nouveau mot de passe, une nouvelle cle HMAC et leurs valeurs chiffrees :
+Generer un nouveau mot de passe, une nouvelle cle HMAC, un mot de passe
+PostgreSQL et leurs valeurs chiffrees :
 
 ```bash
 backend/.venv/bin/python scripts/generate_auth_env.py
 ```
 
-Reporter ensuite `AUTH_ENV_ENCRYPTION_KEY`, `AUTH_PASSWORD_ENCRYPTED` et
-`AUTH_SECRET_KEY_ENCRYPTED` dans `docker/.env`. La sortie affiche aussi
+Reporter ensuite `AUTH_ENV_ENCRYPTION_KEY`, `AUTH_PASSWORD_ENCRYPTED`,
+`AUTH_SECRET_KEY_ENCRYPTED`, `POSTGRES_PASSWORD` et
+`POSTGRES_PASSWORD_ENCRYPTED` dans `docker/.env`. La sortie affiche aussi
 `GENERATED_AUTH_PASSWORD`, qui est le mot de passe a saisir dans l'ecran
-d'authentification.
+d'authentification. Docker PostgreSQL utilise `POSTGRES_PASSWORD` en clair au
+demarrage de la base ; `POSTGRES_PASSWORD_ENCRYPTED` conserve la version
+chiffree du meme secret.
 
 La reponse contient `access_token`, `token_type` et `expires_in`. Les appels de
 mise a jour doivent ensuite envoyer :
@@ -180,98 +223,38 @@ Authorization: Bearer <access_token>
 
 ### Routes Disponibles
 
-```http
-GET /api/routes
-```
+`GET /api/routes` retourne les routes backend et indique celles qui sont
+publiques ou protegees par token Bearer.
 
-Retourne les routes backend et indique si elles sont publiques ou protegees :
+Routes principales :
 
-```json
-{
-  "routes": [
-    {
-      "path": "/collections/JeuxVideo/games",
-      "endpoint": "add_jeux_video_game",
-      "methods": ["POST"],
-      "requires_auth": true,
-      "access": "bearer_token",
-      "auth_schemes": ["Bearer"]
-    }
-  ]
-}
-```
+| Methode | Route | Role |
+| --- | --- | --- |
+| `GET` | `/collections/JeuxVideo/platforms` | Liste les plateformes ODS |
+| `GET` | `/collections/JeuxVideo/home` | Retourne les statistiques d'accueil |
+| `GET` | `/collections/JeuxVideo/search?platform=Switch&q=mario` | Liste ou filtre les jeux d'une plateforme |
+| `GET` | `/collections/JeuxVideo/game-search?q=mario` | Recherche un jeu sur toutes les plateformes |
+| `GET` | `/collections/JeuxVideo/column-values?platform=Switch` | Retourne les valeurs distinctes d'une plateforme |
+| `GET` | `/collections/JeuxVideo/add-game-choices?platform=Switch` | Retourne les choix fusionnes et tries du formulaire |
+| `GET` | `/collections/JeuxVideo/platform-image/Switch` | Retourne l'image embarquee de la plateforme |
+| `POST` | `/collections/JeuxVideo/games` | Ajoute un jeu de collection |
+| `PUT` | `/collections/JeuxVideo/games` | Modifie un jeu de collection |
+| `DELETE` | `/collections/JeuxVideo/games` | Supprime un jeu de collection |
+| `POST` | `/collections/JeuxVideo/wishlist/games` | Ajoute un jeu a la liste de souhaits |
+| `PUT` | `/collections/JeuxVideo/wishlist/games` | Modifie un jeu de la liste de souhaits |
+| `DELETE` | `/collections/JeuxVideo/wishlist/games` | Supprime un jeu de la liste de souhaits |
+| `POST` | `/collections/JeuxVideo/cache/reset` | Vide le cache ODS |
+| `GET` | `/collections/JeuxVideo/ods/download` | Telecharge le fichier ODS |
 
-### Plateformes
+Les routes `POST`, `PUT`, `DELETE`, `cache/reset` et `ods/download` exigent
+`Authorization: Bearer <access_token>`. Les choix du formulaire d'ajout sont
+fusionnes cote backend entre collection et liste de souhaits, dedoublonnes en
+ignorant casse et espaces, nettoyes des valeurs invalides comme `nan`, puis
+tries alphabetiquement.
 
-```http
-GET /collections/JeuxVideo/platforms
-```
-
-Retourne la liste des onglets de plateformes.
-
-### Accueil
-
-```http
-GET /collections/JeuxVideo/home
-```
-
-Retourne les statistiques de l'onglet `Accueil`, avec les liens vers les images de plateformes.
-
-### Jeux d'une plateforme
-
-```http
-GET /collections/JeuxVideo/search?platform=Switch
-```
-
-Retourne les jeux d'une plateforme. Le parametre `q` permet de filtrer les resultats.
-
-### Recherche globale par nom
-
-```http
-GET /collections/JeuxVideo/game-search?q=mario
-```
-
-Recherche un jeu par son nom dans tous les onglets de plateformes.
-
-### Valeurs de colonnes
-
-```http
-GET /collections/JeuxVideo/column-values?platform=Switch
-```
-
-Retourne les valeurs distinctes par colonne, utilisees notamment pour les filtres et les suggestions du formulaire.
-
-### Image d'une plateforme
-
-```http
-GET /collections/JeuxVideo/platform-image/Switch
-```
-
-Retourne l'image embarquee dans l'onglet de la plateforme.
-
-### Ajouter un jeu
-
-```http
-POST /collections/JeuxVideo/games
-Content-Type: application/json
-Authorization: Bearer <access_token>
-```
-
-Exemple :
-
-```json
-{
-  "platform": "Switch",
-  "Nom du jeu": "Exemple",
-  "Studio": "Nintendo",
-  "Date de sortie": "2026-05-01",
-  "Date d'achat": "2026-05-01",
-  "Lieu d'achat": "Fnac",
-  "Note": "8/10",
-  "Prix d'achat": "49.99",
-  "Version": "FR"
-}
-```
+Le formulaire `/add-game` reutilise la meme page pour ajouter vers la collection
+ou vers la liste de souhaits. En mode liste de souhaits, le champ plateforme est
+affiche sous le libelle `Plateforme`.
 
 Avant chaque ecriture, une sauvegarde est creee dans le repertoire de backup
 configure par `JEUXVIDEO_ODS_BACKUP_DIR` :
@@ -284,16 +267,36 @@ collection.ods.backup-YYYYMMDDHHMMSSffffff
 
 ### Avec Docker Compose
 
-Le projet peut tourner avec deux conteneurs :
+Le projet peut tourner avec trois conteneurs :
 
 - `backend` : API Flask exposee uniquement au reseau Docker interne
+- `database` : PostgreSQL accessible uniquement par le backend via le reseau Docker interne `backend_data`
 - `web` : Nginx qui sert le frontend React compile et proxifie `/api` et `/collections` vers le backend
 
 Seul le fichier ODS defini par `JEUXVIDEO_ODS_FILE` est monte dans le conteneur backend, sans monter tout son dossier parent.
 Les fichiers temporaires sont ecrits dans un `tmpfs` conteneur sur `/project/tmp`.
 Les sauvegardes sont ecrites dans le repertoire monte `JEUXVIDEO_BACKUP_DIR`, disponible dans le conteneur sur `/project/backup`.
+PostgreSQL n'expose aucun port vers l'hote. Le backend recoit `DATABASE_URL` avec l'hote Docker interne `database`.
 Dans `docker/.env`, la valeur locale pointe vers `../collection.ods`.
 Dans `docker/.env.example`, la valeur versionnable pointe vers `../collection-example.ods`.
+
+Variables Docker principales :
+
+| Variable | Role |
+| --- | --- |
+| `WEB_PORT` | Port HTTP expose par le conteneur web |
+| `APP_HOME_TITLE` | Titre affiche dans l'interface |
+| `JEUXVIDEO_ODS_FILE` | Fichier ODS monte dans le backend |
+| `JEUXVIDEO_BACKUP_DIR` | Repertoire hote recevant les sauvegardes ODS |
+| `AUTH_USERNAME` | Identifiant autorise pour les actions protegees |
+| `AUTH_ENV_ENCRYPTION_KEY` | Cle Fernet pour dechiffrer les secrets applicatifs |
+| `AUTH_PASSWORD_ENCRYPTED` | Mot de passe applicatif chiffre |
+| `AUTH_SECRET_KEY_ENCRYPTED` | Secret de signature des tokens chiffre |
+| `AUTH_TOKEN_TTL_SECONDS` | Duree de validite des tokens Bearer |
+| `POSTGRES_DB` | Nom de la base PostgreSQL |
+| `POSTGRES_USER` | Utilisateur PostgreSQL |
+| `POSTGRES_PASSWORD` | Mot de passe PostgreSQL utilise par Docker |
+| `POSTGRES_PASSWORD_ENCRYPTED` | Copie chiffree du mot de passe PostgreSQL |
 
 Copier le fichier d'exemple d'environnement :
 
@@ -307,6 +310,10 @@ Adapter ensuite `docker/.env` si besoin :
 WEB_PORT=8080
 JEUXVIDEO_ODS_FILE=../collection.ods
 JEUXVIDEO_BACKUP_DIR=../backup
+POSTGRES_DB=cloudcollectionapp
+POSTGRES_USER=cloudcollectionapp
+POSTGRES_PASSWORD=changer-ce-mot-de-passe
+POSTGRES_PASSWORD_ENCRYPTED=fernet:generer-avec-scripts/generate_auth_env.py
 ```
 
 Demarrer l'application :
@@ -314,6 +321,12 @@ Demarrer l'application :
 ```bash
 cd docker
 docker compose up --build
+```
+
+Ou depuis la racine :
+
+```bash
+./start.sh -d
 ```
 
 L'application sera disponible sur :
@@ -340,6 +353,15 @@ Pour arreter :
 cd docker
 docker compose down
 ```
+
+Ou depuis la racine :
+
+```bash
+./stop.sh -d
+```
+
+Pour supprimer aussi les donnees PostgreSQL de developpement, supprimer le
+volume Docker `cloudcollectionapp_postgres_data`.
 
 ### Backend
 
@@ -375,6 +397,8 @@ Depuis la racine :
 ```bash
 ./start.sh
 ./stop.sh
+./start.sh -d
+./stop.sh -d
 ```
 
 Avec ports personnalises :
@@ -393,9 +417,30 @@ npm run build
 
 Le build de production est genere dans `frontend/dist/`.
 
+## Tests
+
+Lancer les tests backend depuis la racine :
+
+```bash
+./test_backend.sh
+```
+
+Le script verifie Python 3.12, cree ou recree `backend/.venv` si necessaire,
+installe les dependances quand `requirements.txt` change, puis lance
+`unittest`.
+
+Le frontend peut etre valide par :
+
+```bash
+cd frontend
+npm run build
+```
+
 ## Notes De Maintenance
 
 - Le fichier ODS reste la source de verite.
+- PostgreSQL est present pour les futures fonctionnalites et n'est pas encore la source de verite de la collection.
 - Les dossiers `node_modules/`, `dist/`, `.venv/` et les caches Python sont ignores par Git.
 - L'ajout de jeu modifie le fichier ODS sur disque : verifier la sauvegarde si une modification doit etre annulee.
-- Si la structure du fichier ODS change fortement, il faudra adapter `JeuVideoService`.
+- Les sauvegardes ODS sont creees avant les ajouts, modifications et suppressions.
+- Si la structure du fichier ODS change fortement, il faudra adapter les services `backend/services/ods/` et `JeuVideoService`.
