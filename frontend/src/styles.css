@@ -56,6 +56,33 @@ p {
   font-weight: 700;
 }
 
+.progressBar {
+  background: #dbe4f0;
+  border-radius: 999px;
+  height: 0.45rem;
+  margin: 0.85rem 0;
+  overflow: hidden;
+}
+
+.progressBar span {
+  animation: progressBarSlide 1.1s ease-in-out infinite;
+  background: #2563eb;
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+  width: 42%;
+}
+
+@keyframes progressBarSlide {
+  0% {
+    transform: translateX(-110%);
+  }
+
+  100% {
+    transform: translateX(240%);
+  }
+}
+
 .controls {
   display: flex;
   align-items: center;

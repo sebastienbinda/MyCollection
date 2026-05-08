@@ -14,6 +14,7 @@
  */
 import { Component } from "react";
 import DateInputFormatter from "../services/DateInputFormatter";
+import ProgressBar from "./ProgressBar";
 
 /**
  * Fenetre modale de modification d'un jeu de liste de souhaits.
@@ -140,9 +141,10 @@ class EditWishlistDialog extends Component {
                 Annuler
               </button>
               <button type="submit" disabled={this.props.isSaving}>
-                {this.props.isSaving ? "Modification..." : "Modifier le jeu"}
+                Modifier le jeu
               </button>
             </div>
+            {this.props.isSaving ? <ProgressBar label="Modification du jeu en cours" /> : null}
           </form>
         </section>
       </div>

@@ -128,6 +128,7 @@ class AppViewSwitch {
         addGameMessage={props.addGameMessage}
         isAddingGame={props.isAddingGame}
         canAddGame={props.actionPermissions.canAddGame}
+        canAddWishlistGame={props.actionPermissions.canAddWishlistGame}
         onBack={props.goHome}
         onSubmit={props.submitNewGame}
         onFieldChange={props.updateGameFormValue}

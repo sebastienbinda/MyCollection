@@ -14,14 +14,17 @@
  */
 import { Component } from "react";
 import { formatCellValue, formatNumber } from "../collectionUtils";
+import WishlistSortService from "../services/WishlistSortService";
 import WishlistTransferService from "../services/WishlistTransferService";
 import EditWishlistDialog from "./EditWishlistDialog";
 import GameTable from "./GameTable";
+import ProgressBar from "./ProgressBar";
 import ProjectIcon from "./ProjectIcon";
 /**
  * Vue dediee a l'onglet ODS `Liste de souhaits`.
  */
 class WishlistView extends Component {
+  sortService = new WishlistSortService();
   transferService = new WishlistTransferService();
   state = {
     transferError: "",
@@ -216,9 +219,14 @@ class WishlistView extends Component {
    * @returns {string} Classe CSS de statut de ligne.
    */
   getWishlistRowClassName(game) {
-    return this.transferService.hasPurchaseDate(game)
-      ? "wishlistPurchasePendingRow"
-      : "wishlistRegularRow";
+    const classes = [
+      "wishlistPlatformRow",
+      `wishlistPlatformColor${this.sortService.getPlatformColorIndex(game)}`,
+    ];
+    if (this.transferService.hasPurchaseDate(game)) {
+      classes.push("wishlistPurchasePendingRow");
+    }
+    return classes.join(" ");
   }
   /**
    * Retourne le message a afficher quand aucun jeu ne passe les filtres.
@@ -265,7 +273,7 @@ class WishlistView extends Component {
     } = this.props;
     const { transferSelectedGame, transferPlatform } = this.state;
     const namedGames = this.filterNamedGames(games);
-    const namedSortedGames = this.filterNamedGames(sortedGames);
+    const namedSortedGames = this.sortService.sortByPlatformAndName(this.filterNamedGames(sortedGames));
     const namedFilteredGames = this.filterNamedGames(filteredGames);
     const purchasePendingCount = namedGames.filter((game) =>
       this.transferService.hasPurchaseDate(game)
@@ -328,7 +336,7 @@ class WishlistView extends Component {
         </section>
         {error ? <p className="error">{error}</p> : null}
         {this.state.transferMessage ? <p className="success">{this.state.transferMessage}</p> : null}
-        {isLoadingGames ? <p>Chargement des jeux...</p> : null}
+        {isLoadingGames ? <ProgressBar label="Chargement des jeux" /> : null}
         {!isLoadingGames && namedGames.length === 0 ? (
           <p>Aucun jeu dans la liste de souhaits.</p>
         ) : null}
@@ -467,9 +475,10 @@ class WishlistView extends Component {
                   type="submit"
                   disabled={!transferPlatform || this.state.isTransferringGame}
                 >
-                  {this.state.isTransferringGame ? "Ajout..." : "Confirmer l'ajout"}
+                  Confirmer l'ajout
                 </button>
               </div>
+              {this.state.isTransferringGame ? <ProgressBar label="Ajout du jeu en cours" /> : null}
             </form>
           </div>
         ) : null}

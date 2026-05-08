@@ -20,7 +20,9 @@ import useBackendActionPermissions from "./hooks/useBackendActionPermissions";
 import useOdsDownload from "./hooks/useOdsDownload";
 import usePlatformGameMutations from "./hooks/usePlatformGameMutations";
 import useWishlistGameMutations from "./hooks/useWishlistGameMutations";
+import AddGameChoicesApi from "./services/AddGameChoicesApi";
 import JeuxVideoApi from "./services/JeuxVideoApi";
+import WishlistAddApi from "./services/WishlistAddApi";
 const initialGameForm = AppRouting.createInitialGameForm();
 /** Composant racine React. @param {void} Aucun. @returns {import("react").JSX.Element} Interface. */
 function App() {
@@ -329,20 +331,15 @@ function App() {
   }, [selectedPlatform, gamesReloadKey]);
 
   useEffect(() => {
-    /**
-     * Charge les valeurs existantes pour alimenter les suggestions du formulaire.
-     *
-     * @param {void} Aucun - Utilise `gameForm.platform` et la vue courante.
-     * @returns {Promise<void>} Met a jour `addGameColumnValues`.
-     */
+    /** Charge les suggestions du formulaire. @param {void} Aucun. @returns {Promise<void>} Met a jour les valeurs. */
     const fetchAddGameColumnValues = async () => {
-      if (currentView !== "addGame" || !gameForm.platform) {
+      if (currentView !== "addGame") {
         setAddGameColumnValues({});
         return;
       }
 
       try {
-        const data = await JeuxVideoApi.fetchColumnValues(gameForm.platform);
+        const data = await AddGameChoicesApi.fetchChoices(gameForm.platform);
         setAddGameColumnValues(data.values_by_column || {});
       } catch (e) {
         setAddGameColumnValues({});
@@ -352,30 +349,33 @@ function App() {
     fetchAddGameColumnValues();
   }, [currentView, gameForm.platform, odsReloadKey]);
 
-  /**
-   * Soumet un nouveau jeu au backend.
-   *
-   * @param {React.FormEvent<HTMLFormElement>} event - Evenement de soumission du formulaire.
-   * @returns {Promise<void>} Ajoute le jeu, recharge la liste et ouvre sa plateforme.
-   */
+  /** Soumet un nouveau jeu. @param {React.FormEvent<HTMLFormElement>} event - Soumission. @returns {Promise<void>} Recharge la vue. */
   const submitNewGame = async (event) => {
     event.preventDefault();
     setAddGameMessage("");
     setAddGameError("");
-    if (!actionPermissions.canAddGame) return;
+    const isWishlistTarget = gameForm.addTarget === "wishlist";
+    if (isWishlistTarget && !actionPermissions.canAddWishlistGame) return;
+    if (!isWishlistTarget && !actionPermissions.canAddGame) return;
 
     try {
       setIsAddingGame(true);
-      const data = await JeuxVideoApi.addGame(gameForm);
-
-      setAddGameMessage("Jeu ajoute avec succes.");
+      const data = isWishlistTarget ? await WishlistAddApi.addWishlistGame(gameForm) : await JeuxVideoApi.addGame(gameForm);
+      setAddGameMessage(
+        isWishlistTarget ? "Jeu ajoute a la liste de souhaits." : "Jeu ajoute avec succes."
+      );
       setGameForm({
         ...initialGameForm,
         platform: gameForm.platform,
+        addTarget: gameForm.addTarget,
       });
       reloadOds();
       reloadGames();
-      openPlatform(data.item.Plateforme);
+      if (isWishlistTarget) {
+        openWishlist();
+      } else {
+        openPlatform(data.item.Plateforme);
+      }
     } catch (e) {
       setAddGameError(e.message || "Impossible d'ajouter le jeu.");
     } finally {
@@ -466,30 +466,22 @@ function App() {
   return (
     <AppFrame>
       {AppViewSwitch.render({
-        currentView, homeStats, platforms, selectedPlatform, error,
-        isLoadingHome, isSearchingGames, hasSearchedGames,
-        homeSearchQuery, homeSearchResults, homeSearchError,
-        cacheResetMessage, cacheResetError, isResettingCache, gameForm,
-        addGameColumnValues, addGameError, addGameMessage, isAddingGame, namedGames,
-        columns, valuesByColumn, columnFilters, sortConfig, sortedGames, filteredGames,
-        isLoadingGames, isSavingGame: gameMutations.isSavingGame, editingGame: gameMutations.editingGame,
-        editingWishlistGame: wishlistMutations.editingWishlistGame,
+        currentView, homeStats, platforms, selectedPlatform, error, isLoadingHome, isSearchingGames, hasSearchedGames,
+        homeSearchQuery, homeSearchResults, homeSearchError, cacheResetMessage, cacheResetError, isResettingCache,
+        gameForm, addGameColumnValues, addGameError, addGameMessage, isAddingGame, namedGames, columns,
+        valuesByColumn, columnFilters, sortConfig, sortedGames, filteredGames, isLoadingGames, isLoadingPlatforms,
+        actionPermissions, authenticatedUsername, selectedPlatformStats, studioCount: getStudioCount(namedGames),
+        isSavingGame: gameMutations.isSavingGame, editingGame: gameMutations.editingGame, editingWishlistGame: wishlistMutations.editingWishlistGame,
         isSavingWishlistGame: wishlistMutations.isSavingWishlistGame,
-        selectedPlatformStats, studioCount: getStudioCount(namedGames),
         deleteGameMessage: gameMutations.deleteGameMessage, deleteGameError: gameMutations.deleteGameError,
-        isLoadingPlatforms, actionPermissions, authenticatedUsername,
         downloadError: odsDownload.downloadError, isDownloadingOds: odsDownload.isDownloadingOds,
         openAddGamePage, openAdminDashboard, openWishlist, openPlatform, setHomeSearchQuery,
         logout: JeuxVideoApi.confirmAndClearAccessToken, searchGamesByName, closeHomeSearch,
         resetOdsCache, downloadOdsFile: odsDownload.downloadOdsFile, goHome, submitNewGame,
         updateGameFormValue, addWishlistGameToPlatform, deleteWishlistGame, toggleSort, setColumnFilters,
-        openEditGame: gameMutations.openEditGame,
-        saveEditedGame: gameMutations.saveEditedGame,
-        cancelEditGame: gameMutations.cancelEditGame,
-        openEditWishlistGame: wishlistMutations.openEditWishlistGame,
-        saveEditedWishlistGame: wishlistMutations.saveEditedWishlistGame,
-        cancelEditWishlistGame: wishlistMutations.cancelEditWishlistGame,
-        deletePlatformGame: gameMutations.deletePlatformGame,
+        openEditGame: gameMutations.openEditGame, saveEditedGame: gameMutations.saveEditedGame, cancelEditGame: gameMutations.cancelEditGame,
+        openEditWishlistGame: wishlistMutations.openEditWishlistGame, saveEditedWishlistGame: wishlistMutations.saveEditedWishlistGame,
+        cancelEditWishlistGame: wishlistMutations.cancelEditWishlistGame, deletePlatformGame: gameMutations.deletePlatformGame,
       })}
       <AuthSessionModal isOpen={authSessionModal.isOpen} onAuthenticated={authSessionModal.markAuthenticated} onClose={authSessionModal.close} />
     </AppFrame>

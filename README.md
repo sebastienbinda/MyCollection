@@ -53,7 +53,7 @@ Le frontend communique avec le backend via les routes `/collections/...`. En dev
 
 Technologies :
 
-- Python
+- Python 3.12
 - Flask
 - Flask-Cors
 - pandas
@@ -345,11 +345,14 @@ docker compose down
 
 ```bash
 cd backend
-python3 -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 BACKEND_PORT=7777 python app.py
 ```
+
+Le script `./test_backend.sh` utilise aussi Python 3.12 et recree automatiquement
+`backend/.venv` si le virtualenv existant utilise une autre version.
 
 Le backend tourne sur `http://localhost:7777`.
 

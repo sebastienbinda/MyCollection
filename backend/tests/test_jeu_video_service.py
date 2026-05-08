@@ -259,6 +259,9 @@ class JeuVideoServiceTest(unittest.TestCase):
                 "platform": "Switch",
                 "Nom du jeu": " Metroid Prime ",
                 "Studio": " Retro Studios ",
+                "Date d'achat": "2026-05-08",
+                "Lieu d'achat": "Boutique",
+                "Prix d'achat": "59.99",
             }
         )
 
@@ -279,6 +282,19 @@ class JeuVideoServiceTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.service.add_game({"platform": "Xbox", "Nom du jeu": "Halo"})
+
+    def test_add_game_rejects_missing_required_fields(self):
+        """Verifie la validation des champs d'ajout collection.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None: Les assertions valident le refus du payload incomplet.
+        """
+
+        with self.assertRaises(ValueError):
+            self.service.add_game({"platform": "Switch", "Nom du jeu": "Metroid Prime"})
 
     def test_delete_wishlist_game_resets_cache(self):
         """Verifie la suppression d'un jeu wishlist et l'invalidation du cache.

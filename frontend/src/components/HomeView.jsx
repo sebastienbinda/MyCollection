@@ -1,5 +1,6 @@
 import { formatCellValue, formatCurrency, formatNumber } from "../collectionUtils";
 import AuthStatusMenu from "./AuthStatusMenu";
+import ProgressBar from "./ProgressBar";
 import ProjectIcon from "./ProjectIcon";
 
 /**
@@ -76,7 +77,7 @@ function HomeView({
       </header>
 
       {error ? <p className="error">{error}</p> : null}
-      {isLoadingHome ? <p>Chargement des statistiques...</p> : null}
+      {isLoadingHome ? <ProgressBar label="Chargement des statistiques" /> : null}
 
       {!isLoadingHome && homeStats ? (
         <>
@@ -107,11 +108,7 @@ function HomeView({
               </div>
             </form>
 
-            {isSearchingGames ? (
-              <div className="searchLoadingBar" aria-label="Recherche en cours" role="status">
-                <span />
-              </div>
-            ) : null}
+            {isSearchingGames ? <ProgressBar label="Recherche en cours" /> : null}
             {homeSearchError ? <p className="error">{homeSearchError}</p> : null}
             {hasSearchedGames && !isSearchingGames && homeSearchResults.length === 0 ? (
               <p>Aucun jeu trouve pour cette recherche.</p>

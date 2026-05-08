@@ -340,6 +340,39 @@ class OdsWriterTest(unittest.TestCase):
             backups = os.listdir(backup_dir)
             self.assertEqual(1, len(backups))
             self.assertTrue(backups[0].startswith("collection.ods.backup-"))
+    def test_add_wishlist_game_writes_next_available_row(self):
+        """Verifie l'ajout d'un jeu dans la liste de souhaits.
+        Args:
+            Aucun.
+        Returns:
+            None: Les assertions valident l'ecriture de la ligne wishlist.
+        """
+        with TemporaryDirectory() as directory:
+            ods_path = f"{directory}/collection.ods"
+            original_content = self._build_wishlist_content()
+            self._write_ods_file(ods_path, original_content)
+            writer = OdsWriter(
+                ods_path=ods_path,
+                archive_reader=FakeArchiveReader(original_content),
+                xml_reader=self._xml_reader(),
+            )
+            writer.formula_recalculator = SuccessfulFormulaRecalculator()
+            writer.add_wishlist_game(
+                {
+                    "Nom du jeu": "Chrono Trigger HD",
+                    "Console": "Switch 2",
+                    "Studio": "Square",
+                    "Date de sortie": "",
+                    "Date d'achat": "",
+                    "Lieu d'achat": "",
+                    "Prix d'achat": "59.99",
+                }
+            )
+            with ZipFile(ods_path, "r") as archive:
+                updated_content = archive.read("content.xml")
+            rows = self._read_rows(updated_content, "Liste de souhaits")
+            self.assertEqual("Chrono Trigger HD", rows[7][5])
+            self.assertEqual("Switch 2", rows[7][6])
     def _build_sheet_content(self, with_free_row: bool = True) -> bytes:
         """Construit un `content.xml` minimal pour tester l'ecriture.
         Args:

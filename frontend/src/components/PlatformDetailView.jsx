@@ -15,6 +15,7 @@ import {
 } from "../collectionUtils";
 import EditGameDialog from "./EditGameDialog";
 import GameTable from "./GameTable";
+import ProgressBar from "./ProgressBar";
 import ProjectIcon from "./ProjectIcon";
 
 /**
@@ -139,8 +140,8 @@ function PlatformDetailView({
         </select>
       </div>
 
-      {isLoadingPlatforms ? <p>Chargement des plateformes...</p> : null}
-      {isLoadingGames ? <p>Chargement des jeux...</p> : null}
+      {isLoadingPlatforms ? <ProgressBar label="Chargement des plateformes" /> : null}
+      {isLoadingGames ? <ProgressBar label="Chargement des jeux" /> : null}
 
       {!isLoadingGames && games.length === 0 ? (
         <p>Aucun jeu a afficher pour cette plateforme.</p>

@@ -22,6 +22,18 @@ class GamePayloadValidator:
 
     required_update_fields = ["Nom du jeu", "Date d'achat", "Prix d'achat", "Lieu d'achat"]
 
+    def validate_add_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Valide les donnees d'ajout d'un jeu.
+
+        Args:
+            payload (dict[str, Any]): Donnees de jeu brutes envoyees par le frontend.
+
+        Returns:
+            dict[str, Any]: Donnees nettoyees et pretes a ecrire dans l'ODS.
+        """
+
+        return self.validate_update_payload(payload)
+
     def validate_update_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Valide les donnees de modification d'un jeu.
 

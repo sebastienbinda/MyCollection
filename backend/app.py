@@ -327,6 +327,27 @@ def delete_jeux_video_wishlist_game():
         return jsonify({"error": str(exc)}), 400
     except Exception as exc:
         return jsonify({"error": f"Unable to update ODS file: {exc}"}), 500
+@app.post("/collections/JeuxVideo/wishlist/games")
+@auth_guard.require_token
+def add_jeux_video_wishlist_game():
+    """Ajoute un jeu dans l'onglet ODS `Liste de souhaits`.
+    Args:
+        Aucun.
+    JSON Body:
+        dict[str, Any]: Donnees du jeu, dont `Nom du jeu`, `Console` et `Studio`.
+    Returns:
+        tuple[flask.Response, int]: Objet JSON avec le jeu ajoute et statut 201, ou erreur JSON.
+    """
+    payload = request.get_json(silent=True) or {}
+    try:
+        item = JeuVideoService().add_wishlist_game(payload)
+        return jsonify({"type": CollectionTypes.JeuxVideo.value, "item": item}), 201
+    except FileNotFoundError as exc:
+        return jsonify({"error": str(exc)}), 500
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"error": f"Unable to update ODS file: {exc}"}), 500
 @app.put("/collections/JeuxVideo/wishlist/games")
 @auth_guard.require_token
 def update_jeux_video_wishlist_game():
@@ -406,6 +427,26 @@ def list_jeux_video_column_values():
         )
     except Exception as exc:
         return jsonify({"error": f"Unable to read ODS file: {exc}"}), 500
+@app.get("/collections/JeuxVideo/add-game-choices")
+def list_jeux_video_add_game_choices():
+    """Liste les choix fusionnes pour le formulaire d'ajout.
+    Args:
+        Aucun.
+    Query Args:
+        platform (str): Plateforme collection de reference pour les suggestions.
+    Returns:
+        flask.Response | tuple[flask.Response, int]: Objet JSON avec les choix fusionnes.
+    """
+    platform = request.args.get("platform", "").strip()
+    try:
+        choices = JeuVideoService().list_add_game_choices(platform=platform)
+        return jsonify({"type": CollectionTypes.JeuxVideo.value, **choices})
+    except FileNotFoundError as exc:
+        return jsonify({"error": str(exc)}), 500
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"error": f"Unable to read ODS choices: {exc}"}), 500
 if __name__ == "__main__":
     backend_port = int(os.getenv("BACKEND_PORT", "7777"))
     app.run(debug=True, host="0.0.0.0", port=backend_port)

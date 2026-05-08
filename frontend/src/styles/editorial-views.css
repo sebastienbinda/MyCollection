@@ -190,6 +190,38 @@
   gap: 0.4rem;
 }
 
+.addTargetToggle {
+  align-items: center;
+  border: 1px solid #dbe4f0;
+  border-radius: 8px;
+  display: flex;
+  gap: 0.75rem;
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.85rem;
+}
+
+.addTargetToggle legend {
+  color: #334155;
+  font-weight: 800;
+  padding: 0 0.35rem;
+}
+
+.addTargetToggle label {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #dbe4f0;
+  border-radius: 8px;
+  display: flex;
+  gap: 0.45rem;
+  min-height: 2.35rem;
+  padding: 0 0.8rem;
+}
+
+.addTargetToggle input {
+  min-height: auto;
+}
+
 .addGameForm input,
 .addGameForm select {
   min-height: 2.55rem;
@@ -201,6 +233,10 @@
   grid-column: 1 / -1;
   justify-content: flex-end;
   margin-top: 0.5rem;
+}
+
+.addGameForm .progressBar {
+  grid-column: 1 / -1;
 }
 
 .wishlistPurchaseFilter {
@@ -231,6 +267,69 @@
 }
 
 .wishlistPurchasePendingRow td:first-child {
+  box-shadow: inset 4px 0 0 #f97316;
+}
+
+.wishlistPlatformColor0 td {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.wishlistPlatformColor0 td:first-child {
+  box-shadow: inset 4px 0 0 #2563eb;
+}
+
+.wishlistPlatformColor1 td {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.wishlistPlatformColor1 td:first-child {
+  box-shadow: inset 4px 0 0 #16a34a;
+}
+
+.wishlistPlatformColor2 td {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+}
+
+.wishlistPlatformColor2 td:first-child {
+  box-shadow: inset 4px 0 0 #7c3aed;
+}
+
+.wishlistPlatformColor3 td {
+  background: #fdf2f8;
+  border-color: #fbcfe8;
+}
+
+.wishlistPlatformColor3 td:first-child {
+  box-shadow: inset 4px 0 0 #db2777;
+}
+
+.wishlistPlatformColor4 td {
+  background: #ecfeff;
+  border-color: #a5f3fc;
+}
+
+.wishlistPlatformColor4 td:first-child {
+  box-shadow: inset 4px 0 0 #0891b2;
+}
+
+.wishlistPlatformColor5 td {
+  background: #f7fee7;
+  border-color: #d9f99d;
+}
+
+.wishlistPlatformColor5 td:first-child {
+  box-shadow: inset 4px 0 0 #65a30d;
+}
+
+.wishlistPlatformRow.wishlistPurchasePendingRow td {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.wishlistPlatformRow.wishlistPurchasePendingRow td:first-child {
   box-shadow: inset 4px 0 0 #f97316;
 }
 

@@ -12,6 +12,7 @@
  *
  * Description : page objet de tableau de bord des actions d'administration.
  */
+import ProgressBar from "./ProgressBar";
 import ProjectIcon from "./ProjectIcon";
 
 /**
@@ -82,8 +83,9 @@ function AdminDashboardView({
             onClick={onResetCache}
             disabled={!canResetCache || isResettingCache}
           >
-            {isResettingCache ? "Reset..." : "Reset cache"}
+            Reset cache
           </button>
+          {isResettingCache ? <ProgressBar label="Reset du cache en cours" /> : null}
         </article>
 
         <article className="adminActionCard">
@@ -96,8 +98,9 @@ function AdminDashboardView({
             onClick={onDownloadOds}
             disabled={!canDownloadOds || isDownloadingOds}
           >
-            {isDownloadingOds ? "Telechargement..." : "Telecharger ODS"}
+            Telecharger ODS
           </button>
+          {isDownloadingOds ? <ProgressBar label="Telechargement ODS en cours" /> : null}
         </article>
       </section>
     </main>

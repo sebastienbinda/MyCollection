@@ -21,6 +21,7 @@ from .ods_game_row_editor import OdsGameRowEditor
 from .ods_integrity_validator import OdsIntegrityValidator
 from .ods_namespaces import OdsNamespaces
 from .ods_sheet_row_replacer import OdsSheetRowReplacer
+from .ods_wishlist_appender import OdsWishlistAppender
 from .ods_wishlist_row_editor import OdsWishlistRowEditor
 from .ods_xml_reader import OdsXmlReader
 class OdsWriter:
@@ -53,6 +54,17 @@ class OdsWriter:
         """
         content = self._build_content_with_added_game(platform=platform, game=game)
         self._write_ods_content(content)
+    def add_wishlist_game(self, game: dict[str, Any]) -> None:
+        """Ajoute un jeu dans l'onglet `Liste de souhaits`.
+        Args:
+            game (dict[str, Any]): Donnees wishlist deja validees et nettoyees.
+        Returns:
+            None: Le fichier ODS est modifie sur disque.
+        """
+        appender = OdsWishlistAppender(
+            self.archive_reader, self.xml_reader, self.wishlist_row_editor, self.row_replacer
+        )
+        self._write_ods_content(self._serialized_content(ET.fromstring(appender.build_content(game))))
     def delete_wishlist_game(self, game_name: str, console: str) -> None:
         """Supprime un jeu dans l'onglet `Liste de souhaits`.
         Args:

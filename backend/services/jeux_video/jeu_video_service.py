@@ -24,6 +24,7 @@ from services.ods import (
     OdsXmlReader,
 )
 from services.validation import GamePayloadValidator, WishlistPayloadValidator
+from .add_game_choice_service import AddGameChoiceService
 
 WISHLIST_SHEET = "Liste de souhaits"
 
@@ -146,18 +147,30 @@ class JeuVideoService:
         """
 
         platform = SheetValueFormatter.clean_text(payload.get("platform"))
-        game_name = SheetValueFormatter.clean_text(payload.get("Nom du jeu"))
         if not platform:
             raise ValueError("La plateforme est obligatoire.")
         if platform not in self.list_platforms():
             raise ValueError(f"Sheet '{platform}' not found in ODS file.")
-        if not game_name:
-            raise ValueError("Le nom du jeu est obligatoire.")
 
-        game = self._build_game_payload(payload, game_name)
+        game = self.game_validator.validate_add_payload(payload)
         self.writer.add_game(platform=platform, game=game)
         self.reset_cache()
         return {"Plateforme": platform, **game}
+
+    def add_wishlist_game(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Ajoute un jeu dans l'onglet `Liste de souhaits` apres validation.
+
+        Args:
+            payload (dict[str, Any]): Donnees du formulaire wishlist.
+
+        Returns:
+            dict[str, Any]: Jeu wishlist ajoute.
+        """
+
+        game = self.wishlist_validator.validate_add_payload(payload)
+        self.writer.add_wishlist_game(game)
+        self.reset_cache()
+        return game
 
     def delete_wishlist_game(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Supprime un jeu de l'onglet `Liste de souhaits`.
@@ -319,6 +332,18 @@ class JeuVideoService:
         """
 
         return self.reader.list_column_values(platform)
+
+    def list_add_game_choices(self, platform: str = "") -> dict[str, Any]:
+        """Retourne les choix fusionnes du formulaire d'ajout.
+
+        Args:
+            platform (str): Plateforme collection de reference pour les suggestions.
+
+        Returns:
+            dict[str, Any]: Plateformes et valeurs de colonnes dedoublonnees.
+        """
+
+        return AddGameChoiceService(self.list_platforms, self.list_column_values).list_choices()
 
     def get_platform_image(self, platform: str) -> tuple[bytes, str, str]:
         """Retourne l'image embarquee dans l'onglet d'une plateforme.

@@ -21,6 +21,7 @@ class AppRouting {
   static createInitialGameForm() {
     return {
       platform: "",
+      addTarget: "collection",
       "Nom du jeu": "",
       Studio: "",
       "Date de sortie": "",

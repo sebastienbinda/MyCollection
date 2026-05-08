@@ -19,6 +19,8 @@ BACKEND_DIR="${PROJECT_DIR}/backend"
 VENV_DIR="${BACKEND_DIR}/.venv"
 REQUIREMENTS_FILE="${BACKEND_DIR}/requirements.txt"
 REQUIREMENTS_STAMP="${VENV_DIR}/.requirements.sha256"
+REQUIRED_PYTHON_VERSION="3.12"
+PYTHON_BIN="${PYTHON_BIN:-}"
 
 # Verifie que les fichiers backend requis existent.
 #
@@ -36,14 +38,67 @@ check_backend_files() {
   fi
 }
 
+# Trouve un interpreteur Python compatible avec la version backend supportee.
+#
+# @param {void} Aucun - Utilise `PYTHON_BIN`, Homebrew puis le PATH.
+# @returns {string} Chemin de l'interpreteur Python 3.12.
+find_python_bin() {
+  if [ -n "$PYTHON_BIN" ] && [ -x "$PYTHON_BIN" ]; then
+    echo "$PYTHON_BIN"
+    return
+  fi
+
+  for candidate in \
+    "/opt/homebrew/opt/python@3.12/bin/python3.12" \
+    "/usr/local/opt/python@3.12/bin/python3.12" \
+    "python3.12"
+  do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      command -v "$candidate"
+      return
+    fi
+  done
+
+  echo "Python ${REQUIRED_PYTHON_VERSION} est requis pour les tests backend." >&2
+  echo "Installez-le avec: brew install python@3.12" >&2
+  exit 1
+}
+
+# Retourne la version majeure.mineure d'un interpreteur Python.
+#
+# @param {string} $1 - Chemin de l'interpreteur Python.
+# @returns {string} Version au format `major.minor`.
+get_python_minor_version() {
+  "$1" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")'
+}
+
 # Cree l'environnement virtuel Python s'il n'existe pas encore.
 #
-# @param {void} Aucun - Utilise `python3` et le chemin global `VENV_DIR`.
+# @param {void} Aucun - Utilise Python 3.12 et le chemin global `VENV_DIR`.
 # @returns {void} Cree le dossier de virtualenv si necessaire.
 ensure_virtualenv() {
+  local python_bin
+  local python_version
+  local venv_version
+
+  python_bin="$(find_python_bin)"
+  python_version="$(get_python_minor_version "$python_bin")"
+  if [ "$python_version" != "$REQUIRED_PYTHON_VERSION" ]; then
+    echo "Version Python invalide: ${python_version}. Version requise: ${REQUIRED_PYTHON_VERSION}." >&2
+    exit 1
+  fi
+
+  if [ -x "${VENV_DIR}/bin/python" ]; then
+    venv_version="$(get_python_minor_version "${VENV_DIR}/bin/python")"
+    if [ "$venv_version" != "$REQUIRED_PYTHON_VERSION" ]; then
+      echo "Recreation du virtualenv backend en Python ${REQUIRED_PYTHON_VERSION}..."
+      rm -rf "$VENV_DIR"
+    fi
+  fi
+
   if [ ! -x "${VENV_DIR}/bin/python" ]; then
     echo "Creation du virtualenv backend..."
-    python3 -m venv "$VENV_DIR"
+    "$python_bin" -m venv "$VENV_DIR"
   fi
 }
 

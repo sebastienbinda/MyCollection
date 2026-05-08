@@ -1,0 +1,23 @@
+- Prefer object-oriented design and SOLID principles.
+- Keep business logic in the backend whenever possible.
+- Frontend should mainly handle display and user interactions.
+- Never create source files longer than 500 lines unless strictly necessary.
+- Never create methods longer than 150 lines unless strictly necessary.
+- Organize code by feature/domain.
+- Use explicit naming for classes, methods, variables, and files.
+- Before creating new code, always search for existing similar implementations in the project.
+- Reuse existing patterns and utilities whenever possible.
+- Avoid introducing new frameworks or dependencies unless necessary.
+- Add documentation comments for all public classes and methods in french.
+- Include parameter, return type, and exception descriptions.
+- Add a file header to all new source files containing:
+  - project name
+  - creation date
+  - authors: OpenAI ChatGPT, Codex, Binda Sébastien
+  - Apache 2.0 license
+- Always create or update backend unit tests when modifying logic.
+- Run and validate tests after each code modification.
+- Rebuild Docker images when changes impact runtime behavior.
+- Never hardcode secrets, passwords, or tokens.
+- Prefer maintainable, modular, and reusable code.
+- Respect existing project architecture and conventions.

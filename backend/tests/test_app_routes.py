@@ -72,6 +72,16 @@ class FakeJeuVideoService:
         if not payload.get("Console"):
             raise ValueError("La console est obligatoire.")
         return {"Nom du jeu": payload.get("Nom du jeu"), "Console": payload.get("Console")}
+    def add_wishlist_game(self, payload):
+        """Retourne le jeu wishlist ajoute sans modifier de fichier.
+        Args:
+            payload (dict[str, str]): Donnees du jeu wishlist.
+        Returns:
+            dict[str, str]: Jeu ajoute.
+        """
+        if not payload.get("Studio"):
+            raise ValueError("Studio est obligatoire.")
+        return {"Nom du jeu": payload.get("Nom du jeu"), "Console": payload.get("Console")}
     def update_wishlist_game(self, payload):
         """Retourne le jeu wishlist modifie sans modifier de fichier.
         Args:
@@ -104,6 +114,14 @@ class FakeJeuVideoService:
         if not updated.get("Nom du jeu"):
             raise ValueError("Nom du jeu est obligatoire.")
         return {"Plateforme": payload.get("platform"), **updated}
+    def list_add_game_choices(self, platform=""):
+        """Retourne des choix fusionnes factices.
+        Args:
+            platform (str): Plateforme de reference.
+        Returns:
+            dict[str, object]: Choix du formulaire d'ajout.
+        """
+        return {"platforms": ["Switch", "Xbox"], "values_by_column": {"Plateforme": ["Switch", "Xbox"]}}
 class AppRoutesTest(unittest.TestCase):
     def setUp(self):
         """Remplace le service ODS par un service factice.
@@ -187,6 +205,9 @@ class AppRoutesTest(unittest.TestCase):
         self.assertFalse(routes_by_key[("/api/routes", ("GET",))]["requires_auth"])
         self.assertFalse(routes_by_key[("/collections/JeuxVideo/platforms", ("GET",))]["requires_auth"])
         self.assertTrue(routes_by_key[("/collections/JeuxVideo/games", ("POST",))]["requires_auth"])
+        self.assertTrue(
+            routes_by_key[("/collections/JeuxVideo/wishlist/games", ("POST",))]["requires_auth"]
+        )
         self.assertEqual(
             ["Bearer"],
             routes_by_key[("/collections/JeuxVideo/games", ("POST",))]["auth_schemes"],
@@ -204,6 +225,17 @@ class AppRoutesTest(unittest.TestCase):
         )
         self.assertEqual(200, response.status_code)
         self.assertEqual(2, response.get_json()["removed_entries"])
+    def test_add_game_choices_route_returns_merged_choices(self):
+        """Verifie l'endpoint des choix fusionnes du formulaire d'ajout.
+        Args:
+            Aucun.
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+        response = self.client.get("/collections/JeuxVideo/add-game-choices?platform=Switch")
+        data = response.get_json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(["Switch", "Xbox"], data["platforms"])
     def test_cache_reset_route_requires_authentication(self):
         """Verifie que le reset du cache exige un token.
         Args:
@@ -293,6 +325,34 @@ class AppRoutesTest(unittest.TestCase):
         )
         self.assertEqual(200, response.status_code)
         self.assertEqual("Switch 2", response.get_json()["item"]["Console"])
+    def test_add_wishlist_game_route_returns_created_item(self):
+        """Verifie l'endpoint d'ajout wishlist.
+        Args:
+            Aucun.
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+        response = self.client.post(
+            "/collections/JeuxVideo/wishlist/games",
+            json={"Nom du jeu": "Chrono Trigger", "Console": "Switch 2", "Studio": "Square"},
+            headers=self.get_auth_headers(),
+        )
+        self.assertEqual(201, response.status_code)
+        self.assertEqual("Switch 2", response.get_json()["item"]["Console"])
+    def test_add_wishlist_game_route_returns_validation_error(self):
+        """Verifie les erreurs de validation de l'ajout wishlist.
+        Args:
+            Aucun.
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+        response = self.client.post(
+            "/collections/JeuxVideo/wishlist/games",
+            json={"Nom du jeu": "Chrono Trigger", "Console": "Switch 2"},
+            headers=self.get_auth_headers(),
+        )
+        self.assertEqual(400, response.status_code)
+        self.assertIn("obligatoire", response.get_json()["error"])
     def test_delete_game_route_returns_deleted_item(self):
         """Verifie l'endpoint de suppression d'un jeu de plateforme.
         Args:

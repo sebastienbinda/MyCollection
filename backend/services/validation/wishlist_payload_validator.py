@@ -11,6 +11,7 @@
 #
 # Description : classe objet de validation des champs de jeu de liste de souhaits.
 
+from datetime import datetime
 from typing import Any
 
 from services.formatting import SheetValueFormatter
@@ -20,6 +21,18 @@ class WishlistPayloadValidator:
     """Valide et normalise les champs d'un jeu de liste de souhaits."""
 
     required_fields = ["Nom du jeu", "Console", "Studio"]
+
+    def validate_add_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Valide les donnees d'ajout d'un jeu wishlist.
+
+        Args:
+            payload (dict[str, Any]): Donnees wishlist brutes envoyees par le frontend.
+
+        Returns:
+            dict[str, Any]: Donnees nettoyees et pretes a ecrire dans l'ODS.
+        """
+
+        return self.validate_update_payload(payload)
 
     def validate_update_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Valide les donnees de modification d'un jeu wishlist.
@@ -41,6 +54,9 @@ class WishlistPayloadValidator:
             "Prix d'achat": self._clean_text(payload.get("Prix d'achat") or payload.get("Prix")),
         }
         self._validate_required_fields(cleaned_payload)
+        self._validate_optional_date(cleaned_payload, "Date de sortie")
+        self._validate_optional_date(cleaned_payload, "Date d'achat")
+        self._validate_optional_price(cleaned_payload["Prix d'achat"])
         return cleaned_payload
 
     def _validate_required_fields(self, payload: dict[str, Any]) -> None:
@@ -70,3 +86,41 @@ class WishlistPayloadValidator:
         """
 
         return SheetValueFormatter.clean_text(value) or ""
+
+    def _validate_optional_date(self, payload: dict[str, Any], field_name: str) -> None:
+        """Valide une date facultative au format ISO.
+
+        Args:
+            payload (dict[str, Any]): Donnees nettoyees du jeu wishlist.
+            field_name (str): Nom du champ date a valider.
+
+        Returns:
+            None: Une exception est levee si le format est invalide.
+        """
+
+        value = payload.get(field_name)
+        if not value:
+            return
+        try:
+            datetime.strptime(value, "%Y-%m-%d")
+        except ValueError as exc:
+            raise ValueError(f"{field_name} doit respecter le format YYYY-MM-DD.") from exc
+
+    def _validate_optional_price(self, value: str) -> None:
+        """Valide un prix facultatif positif ou nul.
+
+        Args:
+            value (str): Prix d'achat a valider.
+
+        Returns:
+            None: Une exception est levee si le prix est invalide.
+        """
+
+        if not value:
+            return
+        try:
+            parsed_value = float(value.replace(",", "."))
+        except ValueError as exc:
+            raise ValueError("Prix d'achat doit etre un nombre.") from exc
+        if parsed_value < 0:
+            raise ValueError("Prix d'achat doit etre positif ou egal a 0.")
