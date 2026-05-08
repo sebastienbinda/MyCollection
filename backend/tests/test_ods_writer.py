@@ -16,7 +16,9 @@ Description:
 """
 import unittest
 import xml.etree.ElementTree as ET
+import os
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 from zipfile import ZipFile
 from services.ods import OdsNamespaces, OdsWriter
 from services.ods.ods_xml_reader import OdsXmlReader
@@ -48,6 +50,16 @@ class FailingFormulaRecalculator:
             bool: Ne retourne jamais.
         """
         raise ValueError("Erreur LibreOffice simulee.")
+class SuccessfulFormulaRecalculator:
+    """Recalculateur factice qui simule un recalcul reussi."""
+    def recalculate(self, ods_path: str) -> bool:
+        """Retourne un succes sans modifier le fichier.
+        Args:
+            ods_path (str): Chemin ODS recalcule.
+        Returns:
+            bool: Resultat de recalcul simule.
+        """
+        return True
 class OdsWriterTest(unittest.TestCase):
     """Tests unitaires du comportement d'ajout de jeux dans un ODS."""
     def setUp(self):
@@ -293,6 +305,41 @@ class OdsWriterTest(unittest.TestCase):
             with ZipFile(ods_path, "r") as archive:
                 restored_content = archive.read("content.xml")
             self.assertEqual(original_content, restored_content)
+    def test_write_ods_content_uses_configured_tmp_and_backup_directories(self):
+        """Verifie les repertoires separes pour les temporaires et backups.
+        Args:
+            Aucun.
+        Returns:
+            None: Les assertions valident les chemins de travail configures.
+        """
+        with TemporaryDirectory() as directory:
+            ods_path = f"{directory}/collection.ods"
+            tmp_dir = f"{directory}/tmp"
+            backup_dir = f"{directory}/backup"
+            original_content = self._build_sheet_content()
+            updated_content = self._build_wishlist_content()
+            self._write_ods_file(ods_path, original_content)
+            writer = OdsWriter(
+                ods_path=ods_path,
+                archive_reader=FakeArchiveReader(original_content),
+                xml_reader=self._xml_reader(),
+            )
+            writer.formula_recalculator = SuccessfulFormulaRecalculator()
+            with patch.dict(
+                os.environ,
+                {
+                    "JEUXVIDEO_ODS_TMP_DIR": tmp_dir,
+                    "JEUXVIDEO_ODS_BACKUP_DIR": backup_dir,
+                },
+            ):
+                writer._write_ods_content(updated_content)
+            with ZipFile(ods_path, "r") as archive:
+                written_content = archive.read("content.xml")
+            self.assertEqual(updated_content, written_content)
+            self.assertEqual([], os.listdir(tmp_dir))
+            backups = os.listdir(backup_dir)
+            self.assertEqual(1, len(backups))
+            self.assertTrue(backups[0].startswith("collection.ods.backup-"))
     def _build_sheet_content(self, with_free_row: bool = True) -> bytes:
         """Construit un `content.xml` minimal pour tester l'ecriture.
         Args:

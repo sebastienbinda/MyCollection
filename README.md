@@ -273,10 +273,11 @@ Exemple :
 }
 ```
 
-Avant chaque ecriture, une sauvegarde est creee a cote du fichier ODS :
+Avant chaque ecriture, une sauvegarde est creee dans le repertoire de backup
+configure par `JEUXVIDEO_ODS_BACKUP_DIR` :
 
 ```text
-collection.ods.backup-YYYYMMDDHHMMSS
+collection.ods.backup-YYYYMMDDHHMMSSffffff
 ```
 
 ## Lancement Local
@@ -289,6 +290,8 @@ Le projet peut tourner avec deux conteneurs :
 - `web` : Nginx qui sert le frontend React compile et proxifie `/api` et `/collections` vers le backend
 
 Seul le fichier ODS defini par `JEUXVIDEO_ODS_FILE` est monte dans le conteneur backend, sans monter tout son dossier parent.
+Les fichiers temporaires sont ecrits dans un `tmpfs` conteneur sur `/project/tmp`.
+Les sauvegardes sont ecrites dans le repertoire monte `JEUXVIDEO_BACKUP_DIR`, disponible dans le conteneur sur `/project/backup`.
 Dans `docker/.env`, la valeur locale pointe vers `../collection.ods`.
 Dans `docker/.env.example`, la valeur versionnable pointe vers `../collection-example.ods`.
 
@@ -303,6 +306,7 @@ Adapter ensuite `docker/.env` si besoin :
 ```bash
 WEB_PORT=8080
 JEUXVIDEO_ODS_FILE=../collection.ods
+JEUXVIDEO_BACKUP_DIR=../backup
 ```
 
 Demarrer l'application :

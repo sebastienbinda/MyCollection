@@ -298,9 +298,9 @@ class OdsWriter:
         Returns:
             None: La methode modifie le fichier ODS sur disque.
         """
-        backup_path = f"{self.ods_path}.backup-{datetime.now().strftime('%Y%m%d%H%M%S%f')}"
+        backup_path = self._build_backup_path()
         shutil.copy2(self.ods_path, backup_path)
-        tmp_path = f"{self.ods_path}.tmp"
+        tmp_path = self._build_tmp_path()
         with ZipFile(self.ods_path, "r") as source_archive:
             with ZipFile(tmp_path, "w", compression=ZIP_DEFLATED) as target_archive:
                 for item in source_archive.infolist():
@@ -308,7 +308,7 @@ class OdsWriter:
                         target_archive.writestr(item, content)
                     else:
                         target_archive.writestr(item, source_archive.read(item.filename))
-        os.replace(tmp_path, self.ods_path)
+        self._publish_tmp_ods(tmp_path)
         try:
             self.integrity_validator.validate(self.ods_path)
             self.formula_recalculator.recalculate(self.ods_path)
@@ -319,6 +319,59 @@ class OdsWriter:
                 "Modification ODS annulee: le fichier modifie est invalide. "
                 f"Backup restaure depuis {backup_path}. Detail: {exc}"
             ) from exc
+    def _build_backup_path(self) -> str:
+        """Construit le chemin de sauvegarde du fichier ODS courant.
+        Args:
+            Aucun.
+        Returns:
+            str: Chemin complet du fichier de sauvegarde.
+        """
+        backup_dir = self._get_work_directory("JEUXVIDEO_ODS_BACKUP_DIR")
+        backup_name = f"{os.path.basename(self.ods_path)}.backup-{self._timestamp()}"
+        return os.path.join(backup_dir, backup_name)
+    def _build_tmp_path(self) -> str:
+        """Construit le chemin temporaire utilise pour reecrire l'ODS.
+        Args:
+            Aucun.
+        Returns:
+            str: Chemin complet du fichier temporaire.
+        """
+        tmp_dir = self._get_work_directory("JEUXVIDEO_ODS_TMP_DIR")
+        tmp_name = f"{os.path.basename(self.ods_path)}.{self._timestamp()}.tmp"
+        return os.path.join(tmp_dir, tmp_name)
+    def _get_work_directory(self, env_name: str) -> str:
+        """Retourne un repertoire de travail configure ou voisin de l'ODS.
+        Args:
+            env_name (str): Nom de la variable d'environnement a lire.
+        Returns:
+            str: Repertoire existant pret a recevoir des fichiers.
+        """
+        directory = os.getenv(env_name) or os.path.dirname(os.path.abspath(self.ods_path))
+        os.makedirs(directory, exist_ok=True)
+        return directory
+    def _publish_tmp_ods(self, tmp_path: str) -> None:
+        """Publie le fichier temporaire vers le chemin ODS final.
+        Args:
+            tmp_path (str): Chemin du fichier temporaire ODS.
+        Returns:
+            None: Le fichier ODS final est remplace ou recopie.
+        """
+        same_directory = os.path.dirname(os.path.abspath(tmp_path)) == os.path.dirname(
+            os.path.abspath(self.ods_path)
+        )
+        if same_directory:
+            os.replace(tmp_path, self.ods_path)
+            return
+        shutil.copy2(tmp_path, self.ods_path)
+        os.remove(tmp_path)
+    def _timestamp(self) -> str:
+        """Retourne un horodatage precis pour nommer les fichiers de travail.
+        Args:
+            Aucun.
+        Returns:
+            str: Horodatage au format `YYYYMMDDHHMMSSffffff`.
+        """
+        return datetime.now().strftime("%Y%m%d%H%M%S%f")
     def _serialized_content(self, root: ET.Element) -> bytes:
         """Serialise le XML ODS en normalisant les prefixes de formules.
         Args:
