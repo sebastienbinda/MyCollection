@@ -12,17 +12,15 @@ name: cloudcollectionapp
 
 services:
   traefik:
-    image: traefik:v3.0
+    image: traefik:v3.7
     command:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
-
       # Redirection HTTP -> HTTPS
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-
       # Let's Encrypt
       - "--certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL:?LETSENCRYPT_EMAIL doit etre defini}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
