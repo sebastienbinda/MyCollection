@@ -320,7 +320,7 @@ Demarrer l'application :
 
 ```bash
 cd docker
-docker compose up --build
+docker compose -f docker-compose.local.yml up --build
 ```
 
 Ou depuis la racine :
@@ -351,7 +351,7 @@ Pour arreter :
 
 ```bash
 cd docker
-docker compose down
+docker compose -f docker-compose.local.yml down
 ```
 
 Ou depuis la racine :
@@ -362,6 +362,28 @@ Ou depuis la racine :
 
 Pour supprimer aussi les donnees PostgreSQL de developpement, supprimer le
 volume Docker `cloudcollectionapp_postgres_data`.
+
+### Avec Docker Compose en production
+
+La stack de production utilise un fichier Compose dedie avec Traefik et Let's Encrypt :
+
+```bash
+cd docker
+docker compose -f docker-compose.online.yml up --build -d
+```
+
+Depuis la racine, le script de demarrage selectionne cette stack avec `-p` :
+
+```bash
+./start.sh -p
+```
+
+Les variables `DNS_NAME` et `LETSENCRYPT_EMAIL` doivent etre definies pour la stack online.
+Pour arreter la stack de production :
+
+```bash
+./stop.sh -p
+```
 
 ### Backend
 

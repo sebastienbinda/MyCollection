@@ -13,22 +13,25 @@ BACKEND_PORT="${BACKEND_PORT:-7777}"
 FRONTEND_PORT="${FRONTEND_PORT:-7778}"
 WEB_PORT="${WEB_PORT:-8080}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOCKER_COMPOSE_FILE="${SCRIPT_DIR}/docker/docker-compose.yml"
+DOCKER_COMPOSE_LOCAL_FILE="${SCRIPT_DIR}/docker/docker-compose.local.yml"
+DOCKER_COMPOSE_ONLINE_FILE="${SCRIPT_DIR}/docker/docker-compose.online.yml"
 
 START_MODE="local"
+DEPLOY_ENV="local"
 
-while getopts "dh" option; do
+while getopts "dph" option; do
   case "$option" in
     d)
       START_MODE="docker"
       ;;
     p)
-      PROFILE="online"
+      START_MODE="docker"
+      DEPLOY_ENV="online"
       ;;
     h)
       echo "Usage: ./start.sh [-d] [-p]"
-      echo "  -d  Build et demarre la version Docker en recreant les conteneurs."
-      echo "  -p  Build et demarre la version Docker en recreant les conteneurs avec le profil online."
+      echo "  -d  Build et demarre la stack Docker locale."
+      echo "  -p  Build et demarre la stack Docker de production online."
       exit 0
       ;;
     *)
@@ -61,11 +64,12 @@ start_docker() {
   # Description : reconstruit les images Docker et demarre les conteneurs recrees.
   # Parametres : aucun, utilise WEB_PORT et les variables Docker Compose existantes.
   # Retour : void, demarre la stack Docker Compose.
-  echo "Building and starting Docker stack on web port ${WEB_PORT}..."
-  if [ "$PROFILE" = "online" ]; then
-    WEB_PORT="$WEB_PORT" docker compose -f "$DOCKER_COMPOSE_FILE" --profile "$PROFILE" up -d --build --force-recreate
+  if [ "$DEPLOY_ENV" = "online" ]; then
+    echo "Building and starting online Docker stack..."
+    docker compose -f "$DOCKER_COMPOSE_ONLINE_FILE" up -d --build --force-recreate
   else
-    WEB_PORT="$WEB_PORT" docker compose -f "$DOCKER_COMPOSE_FILE" --profile "local" up -d --build --force-recreate
+    echo "Building and starting local Docker stack on web port ${WEB_PORT}..."
+    WEB_PORT="$WEB_PORT" docker compose -f "$DOCKER_COMPOSE_LOCAL_FILE" up -d --build --force-recreate
   fi
 }
 

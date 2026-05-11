@@ -13,22 +13,25 @@
 BACKEND_PORT="${BACKEND_PORT:-7777}"
 FRONTEND_PORT="${FRONTEND_PORT:-7778}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOCKER_COMPOSE_FILE="${SCRIPT_DIR}/docker/docker-compose.yml"
+DOCKER_COMPOSE_LOCAL_FILE="${SCRIPT_DIR}/docker/docker-compose.local.yml"
+DOCKER_COMPOSE_ONLINE_FILE="${SCRIPT_DIR}/docker/docker-compose.online.yml"
 
 STOP_MODE="local"
+DEPLOY_ENV="local"
 
-while getopts "dh" option; do
+while getopts "dph" option; do
   case "$option" in
     d)
       STOP_MODE="docker"
       ;;
     p)
-      PROFILE="online"
+      STOP_MODE="docker"
+      DEPLOY_ENV="online"
       ;;
     h)
       echo "Usage: ./stop.sh [-d] [-p]"
-      echo "  -d  Arrete la version Docker avec Docker Compose."
-      echo "  -p  Arrete la version Docker avec Docker Compose avec le profil online."
+      echo "  -d  Arrete la stack Docker locale."
+      echo "  -p  Arrete la stack Docker de production online."
       exit 0
       ;;
     *)
@@ -65,11 +68,12 @@ stop_docker() {
   # Description : arrete et supprime les conteneurs Docker Compose du projet.
   # Parametres : aucun.
   # Retour : void, arrete la stack Docker Compose.
-  echo "Stopping Docker stack..."
-  if [ "$PROFILE" = "online" ]; then
-    docker compose -f "$DOCKER_COMPOSE_FILE" --profile "online" down
+  if [ "$DEPLOY_ENV" = "online" ]; then
+    echo "Stopping online Docker stack..."
+    docker compose -f "$DOCKER_COMPOSE_ONLINE_FILE" down
   else
-    docker compose -f "$DOCKER_COMPOSE_FILE" --profile "local" down
+    echo "Stopping local Docker stack..."
+    docker compose -f "$DOCKER_COMPOSE_LOCAL_FILE" down
   fi
 }
 
