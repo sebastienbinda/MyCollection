@@ -392,7 +392,12 @@ td.gameNameColumn {
   .container {
     border-radius: 8px;
     margin: 1rem 0.75rem;
-    padding: 1rem;
+    padding: 0.75rem;
+  }
+
+  .backButton {
+    margin-bottom: 0.55rem;
+    padding: 0.45rem 0.65rem;
   }
 
   .controls {
@@ -435,6 +440,29 @@ td.gameNameColumn {
   .dateValueCompact {
     display: inline;
     white-space: nowrap;
+  }
+
+  table.wishlistGameTable th[data-column],
+  table.wishlistGameTable td[data-column] {
+    display: none;
+  }
+
+  table.wishlistGameTable th.mobileVisibleColumn:not(.filterCell),
+  table.wishlistGameTable td.mobileVisibleColumn {
+    display: table-cell;
+  }
+
+  table.wishlistGameTable th[data-column="Console"].mobileVisibleColumn:not(.filterCell),
+  table.wishlistGameTable td[data-column="Console"].mobileVisibleColumn {
+    display: table-cell;
+  }
+
+  table.wishlistGameTable .gameNameColumn {
+    width: 62%;
+  }
+
+  table.wishlistGameTable .mobileVisibleColumn:not(.gameNameColumn) {
+    width: 38%;
   }
 
   .sortButton {

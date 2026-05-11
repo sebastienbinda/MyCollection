@@ -469,15 +469,24 @@
   }
 
   .platformDetailHero {
-    gap: 0.75rem;
-    margin-bottom: 1rem;
+    gap: 0.45rem;
+    margin-bottom: 0.65rem;
     min-height: 0;
-    padding: 0.9rem;
+    padding: 0.65rem;
   }
 
   .platformDetailContent h1 {
-    font-size: 1.65rem;
-    margin-bottom: 0.35rem;
+    font-size: 1.35rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .wishlistHero .platformDetailContent h1 {
+    font-size: 1.35rem;
+  }
+
+  .platformDetailContent .eyebrow {
+    font-size: 0.62rem;
+    margin-bottom: 0.25rem;
   }
 
   .platformDetailContent .subtitle {
@@ -485,7 +494,7 @@
   }
 
   .platformDetailStats {
-    gap: 0.4rem;
+    gap: 0.3rem;
   }
 
   .platformDetailStatsAuthenticated {
@@ -498,10 +507,10 @@
 
   .platformDetailStats article {
     border-radius: 6px;
-    min-height: 3rem;
+    min-height: 2.4rem;
     min-width: 0;
     overflow: hidden;
-    padding: 0.45rem;
+    padding: 0.35rem;
   }
 
   .platformDetailStats span {
@@ -511,9 +520,9 @@
   }
 
   .platformDetailStats strong {
-    font-size: 0.95rem;
+    font-size: 0.82rem;
     line-height: 1.1;
-    margin-top: 0.22rem;
+    margin-top: 0.16rem;
     overflow-wrap: anywhere;
   }
 
@@ -529,5 +538,45 @@
   .wishlistPurchaseFilter select {
     min-width: 0;
     width: 100%;
+  }
+
+  .wishlistNextReleaseCard {
+    display: grid;
+    gap: 0.18rem 0.55rem;
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-height: 0;
+    padding: 0.5rem 0.65rem;
+  }
+
+  .wishlistNextReleaseCard > span:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .statCard .wishlistNextReleaseName {
+    display: -webkit-box;
+    font-size: 0.9rem;
+    line-height: 1.15;
+    margin-top: 0;
+    max-height: 2.1rem;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .wishlistNextReleaseCard small {
+    display: inline;
+    font-size: 0.66rem;
+    line-height: 1.1;
+    margin-top: 0;
+  }
+
+  .statCard .wishlistReleaseCountdown {
+    align-self: center;
+    font-size: 0.72rem;
+    grid-column: 2;
+    grid-row: 2 / span 3;
+    padding: 0.22rem 0.4rem;
+    position: static;
   }
 }

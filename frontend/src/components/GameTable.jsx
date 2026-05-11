@@ -175,6 +175,66 @@ class GameTable extends Component {
   }
 
   /**
+   * Retourne le libelle affiche pour une colonne.
+   *
+   * @param {string} column - Nom technique de la colonne.
+   * @returns {string} Libelle visible dans l'en-tete du tableau.
+   */
+  getColumnLabel(column) {
+    return this.props.columnLabels?.[column] || column;
+  }
+
+  /**
+   * Retourne le nom de colonne utilise pour les attributs de rendu.
+   *
+   * @param {string} column - Nom technique de la colonne.
+   * @returns {string} Nom expose dans `data-column`.
+   */
+  getColumnDataName(column) {
+    return this.props.columnDataNames?.[column] || column;
+  }
+
+  /**
+   * Indique si une colonne doit rester visible en rendu mobile.
+   *
+   * @param {string} column - Nom technique de la colonne.
+   * @returns {boolean} `true` si la colonne est explicitement visible en mobile.
+   */
+  isMobileVisibleColumn(column) {
+    return (this.props.mobileVisibleColumns || []).includes(column);
+  }
+
+  /**
+   * Retourne les classes CSS d'une colonne de tableau.
+   *
+   * @param {string} column - Nom technique de la colonne.
+   * @returns {string} Classes CSS combinees.
+   */
+  getColumnClassNames(column) {
+    const classes = [getColumnClassName(column)];
+    if (this.isMobileVisibleColumn(column)) {
+      classes.push("mobileVisibleColumn");
+    }
+
+    return classes.filter(Boolean).join(" ");
+  }
+
+  /**
+   * Retourne la valeur brute a afficher pour une cellule.
+   *
+   * @param {Object} game - Ligne de jeu affichee.
+   * @param {string} column - Nom technique de la colonne.
+   * @returns {unknown} Valeur brute resolue pour la cellule.
+   */
+  getCellValue(game, column) {
+    if (this.props.getCellValue) {
+      return this.props.getCellValue(game, column);
+    }
+
+    return game[column];
+  }
+
+  /**
    * Rend le contenu d'une cellule de jeu.
    *
    * @param {Object} game - Ligne de jeu affichee.
@@ -182,20 +242,22 @@ class GameTable extends Component {
    * @returns {string|number|import("react").JSX.Element} Valeur formatee pour la cellule.
    */
   renderCellValue(game, column) {
+    const value = this.getCellValue(game, column);
+
     if (column === "Version") {
-      return this.renderVersionValue(game[column]);
+      return this.renderVersionValue(value);
     }
 
     if (isDateColumn(column)) {
       return (
         <>
-          <span className="dateValueFull">{formatCellValue(column, game[column])}</span>
-          <span className="dateValueCompact">{formatMonthYearValue(game[column])}</span>
+          <span className="dateValueFull">{formatCellValue(column, value)}</span>
+          <span className="dateValueCompact">{formatMonthYearValue(value)}</span>
         </>
       );
     }
 
-    return formatCellValue(column, game[column]);
+    return formatCellValue(column, value);
   }
 
   /**
@@ -212,18 +274,19 @@ class GameTable extends Component {
       onToggleSort,
       getRowClassName,
       renderRowActions,
+      tableClassName,
     } = this.props;
 
     return (
       <div className="tableWrapper">
-        <table>
+        <table className={tableClassName || undefined}>
           <thead>
             <tr>
               {columns.map((column) => (
                 <th
                   key={column}
-                  className={getColumnClassName(column)}
-                  data-column={column}
+                  className={this.getColumnClassNames(column)}
+                  data-column={this.getColumnDataName(column)}
                 >
                   <button
                     className="sortButton"
@@ -235,7 +298,7 @@ class GameTable extends Component {
                         : "ascendant"
                     }`}
                   >
-                    <span>{column}</span>
+                    <span>{this.getColumnLabel(column)}</span>
                     <SortIcon column={column} sortConfig={sortConfig} />
                   </button>
                 </th>
@@ -246,8 +309,8 @@ class GameTable extends Component {
               {columns.map((column) => (
                 <th
                   key={`${column}-filter`}
-                  className={`filterCell ${getColumnClassName(column)}`}
-                  data-column={column}
+                  className={`filterCell ${this.getColumnClassNames(column)}`}
+                  data-column={this.getColumnDataName(column)}
                 >
                   {this.renderColumnFilter(column)}
                 </th>
@@ -264,8 +327,8 @@ class GameTable extends Component {
                 {columns.map((column) => (
                   <td
                     key={`${column}-${index}`}
-                    className={getColumnClassName(column)}
-                    data-column={column}
+                    className={this.getColumnClassNames(column)}
+                    data-column={this.getColumnDataName(column)}
                   >
                     {this.renderCellValue(game, column)}
                   </td>

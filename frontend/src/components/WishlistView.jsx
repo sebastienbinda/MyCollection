@@ -228,6 +228,36 @@ class WishlistView extends Component {
     }
     return classes.join(" ");
   }
+
+  /**
+   * Retourne les colonnes de tableau adaptees a la wishlist.
+   *
+   * @param {string[]} columns - Colonnes brutes issues des donnees.
+   * @returns {string[]} Colonnes affichees, sans doublon Plateforme/Console.
+   */
+  getWishlistTableColumns(columns) {
+    if (columns.includes("Console")) {
+      return columns.filter((column) => column !== "Plateforme");
+    }
+
+    return columns;
+  }
+
+  /**
+   * Retourne une valeur de cellule adaptee a la wishlist.
+   *
+   * @param {Record<string, unknown>} game - Jeu wishlist affiche.
+   * @param {string} column - Colonne demandee.
+   * @returns {unknown} Valeur a afficher dans la cellule.
+   */
+  getWishlistCellValue(game, column) {
+    if (column === "Plateforme") {
+      return game.Plateforme || game.Console;
+    }
+
+    return game[column];
+  }
+
   /**
    * Retourne le message a afficher quand aucun jeu ne passe les filtres.
    *
@@ -275,6 +305,7 @@ class WishlistView extends Component {
     const namedGames = this.filterNamedGames(games);
     const namedSortedGames = this.sortService.sortByPlatformAndName(this.filterNamedGames(sortedGames));
     const namedFilteredGames = this.filterNamedGames(filteredGames);
+    const wishlistColumns = this.getWishlistTableColumns(columns);
     const purchasePendingCount = namedGames.filter((game) =>
       this.transferService.hasPurchaseDate(game)
     ).length;
@@ -357,7 +388,11 @@ class WishlistView extends Component {
             </section>
             <GameTable
               games={namedGames}
-              columns={columns}
+              columns={wishlistColumns}
+              columnLabels={{ Console: "Plateforme" }}
+              getCellValue={(game, column) => this.getWishlistCellValue(game, column)}
+              mobileVisibleColumns={["Nom du jeu", "Console"]}
+              tableClassName="wishlistGameTable"
               valuesByColumn={valuesByColumn}
               columnFilters={columnFilters}
               sortConfig={sortConfig}
