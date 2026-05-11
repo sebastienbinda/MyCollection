@@ -70,10 +70,10 @@ stop_docker() {
   # Retour : void, arrete la stack Docker Compose.
   if [ "$DEPLOY_ENV" = "online" ]; then
     echo "Stopping online Docker stack..."
-    docker compose -f "$DOCKER_COMPOSE_ONLINE_FILE" down
+    docker compose -f "$DOCKER_COMPOSE_ONLINE_FILE" down --remove-orphans
   else
     echo "Stopping local Docker stack..."
-    docker compose -f "$DOCKER_COMPOSE_LOCAL_FILE" down
+    docker compose -f "$DOCKER_COMPOSE_LOCAL_FILE" down --remove-orphans
   fi
 }
 

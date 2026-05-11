@@ -18,8 +18,16 @@ DOCKER_COMPOSE_ONLINE_FILE="${SCRIPT_DIR}/docker/docker-compose.online.yml"
 
 START_MODE="local"
 DEPLOY_ENV="local"
+RECREATE_DOCKER_STACK=false
 
-while getopts "dph" option; do
+print_usage() {
+  echo "Usage: ./start.sh [-d] [-p] [-r]"
+  echo "  -d  Demarre la stack Docker locale."
+  echo "  -p  Demarre la stack Docker de production online."
+  echo "  -r  Reconstruit les images Docker et force la recreation des conteneurs."
+}
+
+while getopts "dprh" option; do
   case "$option" in
     d)
       START_MODE="docker"
@@ -28,14 +36,15 @@ while getopts "dph" option; do
       START_MODE="docker"
       DEPLOY_ENV="online"
       ;;
+    r)
+      RECREATE_DOCKER_STACK=true
+      ;;
     h)
-      echo "Usage: ./start.sh [-d] [-p]"
-      echo "  -d  Build et demarre la stack Docker locale."
-      echo "  -p  Build et demarre la stack Docker de production online."
+      print_usage
       exit 0
       ;;
     *)
-      echo "Usage: ./start.sh [-d] [-p]"
+      print_usage
       exit 1
       ;;
   esac
@@ -61,15 +70,21 @@ start_local() {
 }
 
 start_docker() {
-  # Description : reconstruit les images Docker et demarre les conteneurs recrees.
+  # Description : demarre les conteneurs Docker Compose et supprime les orphelins.
   # Parametres : aucun, utilise WEB_PORT et les variables Docker Compose existantes.
   # Retour : void, demarre la stack Docker Compose.
+  local docker_options=("--remove-orphans")
+
+  if [ "$RECREATE_DOCKER_STACK" = true ]; then
+    docker_options+=("--build" "--force-recreate")
+  fi
+
   if [ "$DEPLOY_ENV" = "online" ]; then
-    echo "Building and starting online Docker stack..."
-    docker compose -f "$DOCKER_COMPOSE_ONLINE_FILE" up -d --build --force-recreate
+    echo "Starting online Docker stack..."
+    docker compose -f "$DOCKER_COMPOSE_ONLINE_FILE" up -d "${docker_options[@]}"
   else
-    echo "Building and starting local Docker stack on web port ${WEB_PORT}..."
-    WEB_PORT="$WEB_PORT" docker compose -f "$DOCKER_COMPOSE_LOCAL_FILE" up -d --build --force-recreate
+    echo "Starting local Docker stack on web port ${WEB_PORT}..."
+    WEB_PORT="$WEB_PORT" docker compose -f "$DOCKER_COMPOSE_LOCAL_FILE" up -d "${docker_options[@]}"
   fi
 }
 
