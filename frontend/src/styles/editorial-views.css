@@ -464,9 +464,57 @@
 }
 
 @media (max-width: 620px) {
-  .addGameForm,
-  .platformDetailStats {
+  .addGameForm {
     grid-template-columns: 1fr;
+  }
+
+  .platformDetailHero {
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    min-height: 0;
+    padding: 0.9rem;
+  }
+
+  .platformDetailContent h1 {
+    font-size: 1.65rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .platformDetailContent .subtitle {
+    display: none;
+  }
+
+  .platformDetailStats {
+    gap: 0.4rem;
+  }
+
+  .platformDetailStatsAuthenticated {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .platformDetailStatsPublic {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .platformDetailStats article {
+    border-radius: 6px;
+    min-height: 3rem;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0.45rem;
+  }
+
+  .platformDetailStats span {
+    font-size: 0.62rem;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+
+  .platformDetailStats strong {
+    font-size: 0.95rem;
+    line-height: 1.1;
+    margin-top: 0.22rem;
+    overflow-wrap: anywhere;
   }
 
   .formActions {

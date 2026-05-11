@@ -10,6 +10,10 @@
  * Auteurs : Codex et Binda Sébastien
  */
 const dateFormatter = new Intl.DateTimeFormat("fr-FR");
+const monthYearFormatter = new Intl.DateTimeFormat("fr-FR", {
+  month: "2-digit",
+  year: "numeric",
+});
 
 /**
  * Detecte si une colonne contient une date.
@@ -78,6 +82,25 @@ export const formatCellValue = (column, value) => {
     if (!Number.isNaN(parsed.getTime())) {
       return dateFormatter.format(parsed);
     }
+  }
+
+  return String(value);
+};
+
+/**
+ * Formate une valeur de date en mois/annee pour les affichages compacts.
+ *
+ * @param {unknown} value - Date ISO, date courte ou texte a convertir.
+ * @returns {string} Date au format `MM/YYYY`, ou `-` si la valeur est vide.
+ */
+export const formatMonthYearValue = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return monthYearFormatter.format(parsed);
   }
 
   return String(value);

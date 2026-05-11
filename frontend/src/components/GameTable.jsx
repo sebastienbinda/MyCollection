@@ -15,6 +15,7 @@
 import { Component } from "react";
 import {
   formatCellValue,
+  formatMonthYearValue,
   getColumnClassName,
   getDateYearOptions,
   isDateColumn,
@@ -185,6 +186,15 @@ class GameTable extends Component {
       return this.renderVersionValue(game[column]);
     }
 
+    if (isDateColumn(column)) {
+      return (
+        <>
+          <span className="dateValueFull">{formatCellValue(column, game[column])}</span>
+          <span className="dateValueCompact">{formatMonthYearValue(game[column])}</span>
+        </>
+      );
+    }
+
     return formatCellValue(column, game[column]);
   }
 
@@ -210,7 +220,11 @@ class GameTable extends Component {
           <thead>
             <tr>
               {columns.map((column) => (
-                <th key={column} className={getColumnClassName(column)}>
+                <th
+                  key={column}
+                  className={getColumnClassName(column)}
+                  data-column={column}
+                >
                   <button
                     className="sortButton"
                     type="button"
@@ -230,7 +244,11 @@ class GameTable extends Component {
             </tr>
             <tr>
               {columns.map((column) => (
-                <th key={`${column}-filter`} className={`filterCell ${getColumnClassName(column)}`}>
+                <th
+                  key={`${column}-filter`}
+                  className={`filterCell ${getColumnClassName(column)}`}
+                  data-column={column}
+                >
                   {this.renderColumnFilter(column)}
                 </th>
               ))}
@@ -244,7 +262,11 @@ class GameTable extends Component {
                 key={`${game["Nom du jeu"] || "game"}-${index}`}
               >
                 {columns.map((column) => (
-                  <td key={`${column}-${index}`} className={getColumnClassName(column)}>
+                  <td
+                    key={`${column}-${index}`}
+                    className={getColumnClassName(column)}
+                    data-column={column}
+                  >
                     {this.renderCellValue(game, column)}
                   </td>
                 ))}

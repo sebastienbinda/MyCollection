@@ -39,12 +39,35 @@ function HomeView({
   return (
     <main className="appShell">
       <header className="pageHeader">
-        {AuthStatusMenu.render({
-          isAuthenticated,
-          username: authenticatedUsername,
-          onOpenAdminDashboard,
-          onLogout,
-        })}
+        <div className="pageHeaderTopActions">
+          <details className="pageHeaderOptionsMenu">
+            <summary aria-label="Ouvrir le menu des options">
+              <svg aria-hidden="true" className="pageHeaderOptionsIcon" viewBox="0 0 24 24">
+                <path d="M4 7h16v2H4V7Zm0 4h16v2H4v-2Zm0 4h16v2H4v-2Z" />
+              </svg>
+              <span>Menu</span>
+            </summary>
+            <div className="pageHeaderActions">
+              <button className="secondaryButton" type="button" onClick={onOpenWishlist}>
+                Liste de souhaits
+              </button>
+              <button
+                className="secondaryButton"
+                type="button"
+                onClick={() => onOpenPlatform(selectedPlatform || platforms[0] || "")}
+                disabled={platforms.length === 0}
+              >
+                Voir les jeux
+              </button>
+            </div>
+          </details>
+          {AuthStatusMenu.render({
+            isAuthenticated,
+            username: authenticatedUsername,
+            onOpenAdminDashboard,
+            onLogout,
+          })}
+        </div>
         <div>
           <p className="eyebrow">Collection personnelle</p>
           <h1>
@@ -54,25 +77,17 @@ function HomeView({
             </span>
           </h1>
           <p className="pageHeaderDateSummary">
-            <span>Premier jeu : {formatCellValue("Date", homeStats?.first_game_date)}</span>
-            <span>Dernier jeu : {formatCellValue("Date", homeStats?.last_game_date)}</span>
+            <span>
+              <span className="pageHeaderDateLabel">Premier jeu : </span>
+              {formatCellValue("Date", homeStats?.first_game_date)}
+            </span>
+            <span className="pageHeaderDateSeparator">-</span>
+            <span>
+              <span className="pageHeaderDateLabel">Dernier jeu : </span>
+              {formatCellValue("Date", homeStats?.last_game_date)}
+            </span>
           </p>
           <p className="subtitle">Jeux, plateformes et statistiques essentielles.</p>
-        </div>
-        <div className="pageHeaderActionArea">
-          <div className="pageHeaderActions">
-            <button className="secondaryButton" type="button" onClick={onOpenWishlist}>
-              Liste de souhaits
-            </button>
-            <button
-              className="secondaryButton"
-              type="button"
-              onClick={() => onOpenPlatform(selectedPlatform || platforms[0] || "")}
-              disabled={platforms.length === 0}
-            >
-              Voir les jeux
-            </button>
-          </div>
         </div>
       </header>
 
@@ -93,17 +108,25 @@ function HomeView({
               </button>
             ) : null}
             <form className="homeSearchForm" onSubmit={onSearchSubmit}>
-              <label htmlFor="home-search">Rechercher un jeu</label>
               <div>
                 <input
                   id="home-search"
                   type="search"
                   value={homeSearchQuery}
                   onChange={(event) => onSearchQueryChange(event.target.value)}
-                  placeholder="Nom du jeu..."
+                  placeholder="Rechercher un jeu"
+                  aria-label="Rechercher un jeu"
                 />
-                <button type="submit" disabled={isSearchingGames}>
-                  Rechercher
+                <button
+                  className="homeSearchSubmitButton"
+                  type="submit"
+                  disabled={isSearchingGames}
+                  aria-label="Lancer la recherche"
+                  title="Rechercher"
+                >
+                  <svg aria-hidden="true" className="homeSearchSubmitIcon" viewBox="0 0 24 24">
+                    <path d="M10.5 4a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13Zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9Zm5.2 9.3 4 4-1.4 1.4-4-4 1.4-1.4Z" />
+                  </svg>
                 </button>
               </div>
             </form>
@@ -162,7 +185,10 @@ function HomeView({
             ) : null}
           </section>
 
-          <section className="statsGrid" aria-label="Statistiques principales">
+          <section
+            className={`statsGrid ${isAuthenticated ? "statsGridAuthenticated" : "statsGridPublic"}`}
+            aria-label="Statistiques principales"
+          >
             <article className="statCard">
               <span>Total jeux</span>
               <strong>{formatNumber(homeStats.totals?.games_count)}</strong>
@@ -179,7 +205,7 @@ function HomeView({
                 </article>
               </>
             ) : null}
-            <article className="statCard">
+            <article className="statCard statCardTopPlatform">
               <span>Plateforme la plus fournie</span>
               <strong>{topPlatform ? topPlatform.name : "-"}</strong>
             </article>
@@ -194,13 +220,15 @@ function HomeView({
             </div>
             <div className="platformGrid">
               {(homeStats.platforms || []).map((platform) => (
-                <article
+                <button
+                  type="button"
                   className={[
                     "platformCard",
                     platform.has_image ? "platformCardWithImage" : "",
                     topPlatform?.sheet_name === platform.sheet_name ? "platformCardTopCount" : "",
                   ].join(" ")}
                   key={platform.name}
+                  onClick={() => onOpenPlatform(platform.sheet_name)}
                   style={
                     platform.image_url
                       ? { backgroundImage: `url("${encodeURI(platform.image_url)}")` }
@@ -225,10 +253,7 @@ function HomeView({
                       </div>
                     </dl>
                   ) : null}
-                  <button type="button" onClick={() => onOpenPlatform(platform.sheet_name)}>
-                    Ouvrir
-                  </button>
-                </article>
+                </button>
               ))}
             </div>
           </section>

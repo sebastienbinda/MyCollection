@@ -102,7 +102,12 @@ function PlatformDetailView({
           </h1>
           <p className="subtitle">Filtrer la liste par plateforme (onglet ODS)</p>
         </div>
-        <div className="platformDetailStats" aria-label="Statistiques de la plateforme">
+        <div
+          className={`platformDetailStats ${
+            isAuthenticated ? "platformDetailStatsAuthenticated" : "platformDetailStatsPublic"
+          }`}
+          aria-label="Statistiques de la plateforme"
+        >
           <article>
             <span>Jeux</span>
             <strong>{formatNumber(selectedPlatformStats?.games_count ?? games.length)}</strong>
