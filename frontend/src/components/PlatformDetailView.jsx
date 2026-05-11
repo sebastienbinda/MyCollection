@@ -42,6 +42,7 @@ function PlatformDetailView({
   isLoadingPlatforms,
   isLoadingGames,
   isSavingGame,
+  isAuthenticated,
   canEditGame,
   canDeleteGame,
   onBack,
@@ -106,14 +107,18 @@ function PlatformDetailView({
             <span>Jeux</span>
             <strong>{formatNumber(selectedPlatformStats?.games_count ?? games.length)}</strong>
           </article>
-          <article>
-            <span>Valeur</span>
-            <strong>{formatCurrency(selectedPlatformStats?.total_price)}</strong>
-          </article>
-          <article>
-            <span>Prix moyen</span>
-            <strong>{formatCurrency(selectedPlatformStats?.average_price)}</strong>
-          </article>
+          {isAuthenticated ? (
+            <>
+              <article>
+                <span>Valeur</span>
+                <strong>{formatCurrency(selectedPlatformStats?.total_price)}</strong>
+              </article>
+              <article>
+                <span>Prix moyen</span>
+                <strong>{formatCurrency(selectedPlatformStats?.average_price)}</strong>
+              </article>
+            </>
+          ) : null}
           <article>
             <span>Studios</span>
             <strong>{formatNumber(studioCount)}</strong>

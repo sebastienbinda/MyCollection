@@ -53,7 +53,9 @@ class JeuxVideoApi {
    * @returns {Promise<Object>} Donnees du tableau de bord.
    */
   static async fetchHomeStats() {
-    return this.fetchJson("/collections/JeuxVideo/home", "Impossible de recuperer l'accueil.");
+    return this.fetchJson("/collections/JeuxVideo/home", "Impossible de recuperer l'accueil.", {
+      headers: this.getAuthorizationHeaders(),
+    });
   }
 
   /**
@@ -78,7 +80,10 @@ class JeuxVideoApi {
   static async fetchGames(platform) {
     return this.fetchJson(
       `/collections/JeuxVideo/search?platform=${encodeURIComponent(platform)}`,
-      "Impossible de recuperer les jeux video."
+      "Impossible de recuperer les jeux video.",
+      {
+        headers: this.getAuthorizationHeaders(),
+      }
     );
   }
 
@@ -91,7 +96,10 @@ class JeuxVideoApi {
   static async fetchColumnValues(platform) {
     return this.fetchJson(
       `/collections/JeuxVideo/column-values?platform=${encodeURIComponent(platform)}`,
-      "Impossible de recuperer les valeurs de colonnes."
+      "Impossible de recuperer les valeurs de colonnes.",
+      {
+        headers: this.getAuthorizationHeaders(),
+      }
     );
   }
 
@@ -200,7 +208,10 @@ class JeuxVideoApi {
   static async searchGamesByName(query) {
     return this.fetchJson(
       `/collections/JeuxVideo/game-search?q=${encodeURIComponent(query)}`,
-      "Impossible de rechercher les jeux."
+      "Impossible de rechercher les jeux.",
+      {
+        headers: this.getAuthorizationHeaders(),
+      }
     );
   }
 

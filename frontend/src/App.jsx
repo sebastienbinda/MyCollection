@@ -223,7 +223,7 @@ function App() {
     };
 
     fetchHomeStats();
-  }, [odsReloadKey]);
+  }, [odsReloadKey, actionPermissions.isAuthenticated]);
 
   useEffect(() => {
     const fetchPlatforms = async () => {
@@ -310,7 +310,7 @@ function App() {
     };
 
     fetchGames();
-  }, [selectedPlatform, gamesReloadKey]);
+  }, [selectedPlatform, gamesReloadKey, actionPermissions.isAuthenticated]);
 
   useEffect(() => {
     const fetchColumnValues = async () => {
@@ -328,7 +328,30 @@ function App() {
     };
 
     fetchColumnValues();
-  }, [selectedPlatform, gamesReloadKey]);
+  }, [selectedPlatform, gamesReloadKey, actionPermissions.isAuthenticated]);
+
+  useEffect(() => {
+    const refreshHomeSearchResults = async () => {
+      const query = homeSearchQuery.trim();
+      if (!hasSearchedGames || !query) {
+        return;
+      }
+
+      try {
+        setIsSearchingGames(true);
+        setHomeSearchError("");
+        const data = await JeuxVideoApi.searchGamesByName(query);
+        setHomeSearchResults(Array.isArray(data.items) ? data.items : []);
+      } catch (e) {
+        setHomeSearchError("Impossible de rechercher dans la collection.");
+        setHomeSearchResults([]);
+      } finally {
+        setIsSearchingGames(false);
+      }
+    };
+
+    refreshHomeSearchResults();
+  }, [actionPermissions.isAuthenticated]);
 
   useEffect(() => {
     /** Charge les suggestions du formulaire. @param {void} Aucun. @returns {Promise<void>} Met a jour les valeurs. */

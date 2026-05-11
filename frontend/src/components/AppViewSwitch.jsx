@@ -214,6 +214,7 @@ class AppViewSwitch {
         isLoadingPlatforms={props.isLoadingPlatforms}
         isLoadingGames={props.isLoadingGames}
         isSavingGame={props.isSavingGame}
+        isAuthenticated={props.actionPermissions.isAuthenticated}
         canEditGame={props.actionPermissions.canEditGame}
         canDeleteGame={props.actionPermissions.canDeleteGame}
         editingGame={props.editingGame}

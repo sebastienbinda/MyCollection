@@ -19,6 +19,65 @@ app = Flask(__name__)
 CORS(app)
 auth_token_service = AuthTokenService()
 auth_guard = AuthGuard(auth_token_service)
+PRICE_FIELDS = {"Prix", "Prix d'achat", "total_price", "average_price"}
+
+
+def is_authenticated_request() -> bool:
+    """Indique si la requete courante transporte un token Bearer valide.
+
+    Args:
+        Aucun.
+
+    Returns:
+        bool: `True` si l'en-tete `Authorization` contient un token valide.
+    """
+
+    token = auth_guard._extract_bearer_token()
+    if not token:
+        return False
+    try:
+        auth_token_service.validate_access_token(token)
+    except ValueError:
+        return False
+    return True
+
+
+def hide_price_information(payload):
+    """Retire les informations de prix d'une structure JSON serialisable.
+
+    Args:
+        payload (Any): Dictionnaire, liste ou valeur primitive a filtrer.
+
+    Returns:
+        Any: Copie de `payload` sans champs de prix.
+    """
+
+    if isinstance(payload, list):
+        return [hide_price_information(item) for item in payload]
+    if isinstance(payload, dict):
+        return {
+            key: hide_price_information(value)
+            for key, value in payload.items()
+            if key not in PRICE_FIELDS
+        }
+    return payload
+
+
+def filter_price_information_for_request(payload):
+    """Masque les prix pour les visiteurs non authentifies.
+
+    Args:
+        payload (Any): Donnees API a retourner au frontend.
+
+    Returns:
+        Any: Donnees originales si authentifie, sinon donnees sans prix.
+    """
+
+    if is_authenticated_request():
+        return payload
+    return hide_price_information(payload)
+
+
 COLLECTION_ITEMS = {
     CollectionTypes.Films.value: [
         Film(id=1, name="Interstellar"),
@@ -125,7 +184,7 @@ def search_collection_items(collection_type):
             in " ".join(str(value).lower() for value in item.to_dict().values())
         ]
     if collection_enum == CollectionTypes.JeuxVideo:
-        return jsonify(items)
+        return jsonify(filter_price_information_for_request(items))
     return jsonify({"type": collection_enum.value, "items": [item.to_dict() for item in items]})
 @app.get("/collections/JeuxVideo/platforms")
 def list_jeux_video_platforms():
@@ -151,7 +210,7 @@ def get_jeux_video_home():
         tuple[flask.Response, int] | flask.Response: Donnees JSON du tableau de bord ou erreur JSON.
     """
     try:
-        stats = JeuVideoService().get_home_stats()
+        stats = filter_price_information_for_request(JeuVideoService().get_home_stats())
         return jsonify({"type": CollectionTypes.JeuxVideo.value, **stats})
     except FileNotFoundError as exc:
         return jsonify({"error": str(exc)}), 500
@@ -227,9 +286,11 @@ def search_jeux_video_games():
     except ValueError:
         parsed_limit = 50
     try:
-        items = JeuVideoService().search_by_game_name(
-            query=search_query,
-            limit=parsed_limit,
+        items = filter_price_information_for_request(
+            JeuVideoService().search_by_game_name(
+                query=search_query,
+                limit=parsed_limit,
+            )
         )
         return jsonify(
             {
@@ -405,7 +466,9 @@ def list_jeux_video_column_values():
     """
     platform = request.args.get("platform", "Playstation").strip() or "Playstation"
     try:
-        values = JeuVideoService().list_column_values(platform=platform)
+        values = filter_price_information_for_request(
+            JeuVideoService().list_column_values(platform=platform)
+        )
         return jsonify(
             {
                 "type": CollectionTypes.JeuxVideo.value,

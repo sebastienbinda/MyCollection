@@ -142,10 +142,12 @@ function HomeView({
                         <dt>Note</dt>
                         <dd>{formatCellValue("Note", game.Note)}</dd>
                       </div>
-                      <div>
-                        <dt>Prix</dt>
-                        <dd>{formatCurrency(game["Prix d'achat"])}</dd>
-                      </div>
+                      {isAuthenticated ? (
+                        <div>
+                          <dt>Prix</dt>
+                          <dd>{formatCurrency(game["Prix d'achat"])}</dd>
+                        </div>
+                      ) : null}
                       <div>
                         <dt>Version</dt>
                         <dd>{formatCellValue("Version", game.Version)}</dd>
@@ -165,14 +167,18 @@ function HomeView({
               <span>Total jeux</span>
               <strong>{formatNumber(homeStats.totals?.games_count)}</strong>
             </article>
-            <article className="statCard">
-              <span>Valeur totale</span>
-              <strong>{formatCurrency(homeStats.totals?.total_price)}</strong>
-            </article>
-            <article className="statCard">
-              <span>Prix moyen</span>
-              <strong>{formatCurrency(homeStats.totals?.average_price)}</strong>
-            </article>
+            {isAuthenticated ? (
+              <>
+                <article className="statCard">
+                  <span>Valeur totale</span>
+                  <strong>{formatCurrency(homeStats.totals?.total_price)}</strong>
+                </article>
+                <article className="statCard">
+                  <span>Prix moyen</span>
+                  <strong>{formatCurrency(homeStats.totals?.average_price)}</strong>
+                </article>
+              </>
+            ) : null}
             <article className="statCard">
               <span>Plateforme la plus fournie</span>
               <strong>{topPlatform ? topPlatform.name : "-"}</strong>
@@ -207,16 +213,18 @@ function HomeView({
                       {formatNumber(platform.games_count)} jeux
                     </p>
                   </div>
-                  <dl>
-                    <div>
-                      <dt>Prix</dt>
-                      <dd>{formatCurrency(platform.total_price)}</dd>
-                    </div>
-                    <div>
-                      <dt>Moyen</dt>
-                      <dd>{formatCurrency(platform.average_price)}</dd>
-                    </div>
-                  </dl>
+                  {isAuthenticated ? (
+                    <dl>
+                      <div>
+                        <dt>Prix</dt>
+                        <dd>{formatCurrency(platform.total_price)}</dd>
+                      </div>
+                      <div>
+                        <dt>Moyen</dt>
+                        <dd>{formatCurrency(platform.average_price)}</dd>
+                      </div>
+                    </dl>
+                  ) : null}
                   <button type="button" onClick={() => onOpenPlatform(platform.sheet_name)}>
                     Ouvrir
                   </button>

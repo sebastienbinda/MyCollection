@@ -51,7 +51,58 @@ class FakeJeuVideoService:
         Returns:
             list[dict[str, str]]: Jeux factices.
         """
-        return [{"Nom du jeu": "Mario Kart", "Plateforme": platform, "Query": query}]
+        return [
+            {
+                "Nom du jeu": "Mario Kart",
+                "Plateforme": platform,
+                "Query": query,
+                "Prix d'achat": 45,
+            }
+        ]
+    def search_by_game_name(self, query, limit=50):
+        """Retourne les jeux factices trouves par nom.
+        Args:
+            query (str): Texte recherche.
+            limit (int): Nombre maximal de resultats.
+        Returns:
+            list[dict[str, object]]: Jeux factices trouves.
+        """
+        return [
+            {
+                "Nom du jeu": "Mario Kart",
+                "Plateforme": "Switch",
+                "Query": query,
+                "Prix d'achat": 45,
+            }
+        ][:limit]
+    def get_home_stats(self):
+        """Retourne des statistiques d'accueil factices.
+        Args:
+            Aucun.
+        Returns:
+            dict[str, object]: Statistiques factices avec prix.
+        """
+        return {
+            "title": "Jeux Video",
+            "totals": {"games_count": 1, "total_price": 45, "average_price": 45},
+            "platforms": [
+                {
+                    "name": "Switch",
+                    "sheet_name": "Switch",
+                    "games_count": 1,
+                    "total_price": 45,
+                    "average_price": 45,
+                }
+            ],
+        }
+    def list_column_values(self, platform):
+        """Retourne les valeurs distinctes factices d'une plateforme.
+        Args:
+            platform (str): Plateforme demandee.
+        Returns:
+            dict[str, list[object]]: Valeurs distinctes factices.
+        """
+        return {"Nom du jeu": ["Mario Kart"], "Prix d'achat": [45]}
     def add_game(self, payload):
         """Retourne le jeu ajoute sans modifier de fichier.
         Args:
@@ -188,6 +239,65 @@ class AppRoutesTest(unittest.TestCase):
         response = self.client.get("/collections/JeuxVideo/platforms")
         self.assertEqual(200, response.status_code)
         self.assertEqual(["Switch", "Playstation"], response.get_json()["platforms"])
+    def test_search_route_hides_prices_without_authentication(self):
+        """Verifie que la recherche publique ne retourne pas les prix.
+        Args:
+            Aucun.
+        Returns:
+            None: Les assertions valident le masquage des prix.
+        """
+        response = self.client.get("/collections/JeuxVideo/search?platform=Switch")
+        self.assertEqual(200, response.status_code)
+        self.assertNotIn("Prix d'achat", response.get_json()[0])
+    def test_search_route_keeps_prices_with_authentication(self):
+        """Verifie que la recherche authentifiee retourne les prix.
+        Args:
+            Aucun.
+        Returns:
+            None: Les assertions valident la presence des prix.
+        """
+        response = self.client.get(
+            "/collections/JeuxVideo/search?platform=Switch",
+            headers=self.get_auth_headers(),
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(45, response.get_json()[0]["Prix d'achat"])
+    def test_game_search_route_hides_prices_without_authentication(self):
+        """Verifie le masquage des prix dans la recherche globale publique.
+        Args:
+            Aucun.
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+        response = self.client.get("/collections/JeuxVideo/game-search?q=mario")
+        data = response.get_json()
+        self.assertEqual(200, response.status_code)
+        self.assertNotIn("Prix d'achat", data["items"][0])
+    def test_home_route_hides_price_statistics_without_authentication(self):
+        """Verifie le masquage des statistiques de prix sur l'accueil public.
+        Args:
+            Aucun.
+        Returns:
+            None: Les assertions valident les champs masques.
+        """
+        response = self.client.get("/collections/JeuxVideo/home")
+        data = response.get_json()
+        self.assertEqual(200, response.status_code)
+        self.assertNotIn("total_price", data["totals"])
+        self.assertNotIn("average_price", data["totals"])
+        self.assertNotIn("total_price", data["platforms"][0])
+        self.assertNotIn("average_price", data["platforms"][0])
+    def test_column_values_route_hides_price_values_without_authentication(self):
+        """Verifie que les valeurs de filtre de prix sont masquees sans token.
+        Args:
+            Aucun.
+        Returns:
+            None: Les assertions valident le retrait de la colonne prix.
+        """
+        response = self.client.get("/collections/JeuxVideo/column-values?platform=Switch")
+        data = response.get_json()
+        self.assertEqual(200, response.status_code)
+        self.assertNotIn("Prix d'achat", data["values_by_column"])
     def test_routes_route_lists_public_and_protected_routes(self):
         """Verifie le catalogue des routes et leurs contraintes d'authentification.
         Args:
