@@ -12,6 +12,8 @@
 import packageMetadata from "../package.json";
 
 class AppMetadata {
+  static appVersion = import.meta.env.VITE_APP_VERSION || packageMetadata.version;
+
   /**
    * Retourne les informations publiques de l'application.
    *
@@ -23,7 +25,7 @@ class AppMetadata {
       name: "CloudApplicationApp",
       githubUrl: "https://github.com/sebastienbinda/CloudCollectionApp",
       releaseDate: "2026-05-03",
-      version: packageMetadata.version,
+      version: AppMetadata.appVersion,
     };
   }
 }

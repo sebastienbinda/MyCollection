@@ -19,9 +19,58 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  change-detection:
+    name: Detect changed areas
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed areas
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          backend_changed=false
+          frontend_changed=false
+
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            backend_changed=true
+            frontend_changed=true
+          else
+            before="${{ github.event.before }}"
+            after="${{ github.sha }}"
+
+            if [[ -z "${before}" || "${before}" == "0000000000000000000000000000000000000000" ]]; then
+              changed_files="$(git diff-tree --no-commit-id --name-only -r "${after}")"
+            else
+              changed_files="$(git diff --name-only "${before}" "${after}")"
+            fi
+
+            if grep -Eq '^(backend/|test_backend\.sh|docker/backend\.Dockerfile|\.github/workflows/ci\.yml)$' <<< "${changed_files}"; then
+              backend_changed=true
+            fi
+
+            if grep -Eq '^(frontend/|docker/frontend\.Dockerfile|\.github/workflows/ci\.yml)$' <<< "${changed_files}"; then
+              frontend_changed=true
+            fi
+          fi
+
+          echo "backend=${backend_changed}" >> "${GITHUB_OUTPUT}"
+          echo "frontend=${frontend_changed}" >> "${GITHUB_OUTPUT}"
+
   backend-tests:
     name: Backend tests
     runs-on: ubuntu-latest
+    needs:
+      - change-detection
+    if: needs.change-detection.outputs.backend == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -32,6 +81,9 @@ jobs:
   frontend-build:
     name: Frontend build
     runs-on: ubuntu-latest
+    needs:
+      - change-detection
+    if: needs.change-detection.outputs.frontend == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -54,7 +106,7 @@ jobs:
   docker-images:
     name: Build and publish Docker images
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') && needs.backend-tests.result == 'success' && needs.frontend-build.result == 'success'
     needs:
       - backend-tests
       - frontend-build
@@ -96,6 +148,8 @@ jobs:
         with:
           context: .
           file: docker/backend.Dockerfile
+          build-args: |
+            APP_VERSION=${{ steps.version.outputs.version }}
           push: true
           tags: |
             ${{ steps.version.outputs.backend_image }}:${{ steps.version.outputs.version }}
@@ -106,6 +160,8 @@ jobs:
         with:
           context: .
           file: docker/frontend.Dockerfile
+          build-args: |
+            APP_VERSION=${{ steps.version.outputs.version }}
           push: true
           tags: |
             ${{ steps.version.outputs.frontend_image }}:${{ steps.version.outputs.version }}

@@ -10,6 +10,9 @@
 #
 FROM python:3.12-slim
 
+ARG APP_VERSION=dev
+LABEL org.opencontainers.image.version="${APP_VERSION}"
+
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 

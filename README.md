@@ -485,12 +485,18 @@ Le projet contient un pipeline GitHub Actions dans :
 .github/workflows/ci.yml
 ```
 
-Il execute les validations sur chaque `push` vers `main` et sur chaque tag Git :
+Il execute les validations sur chaque `push` vers `main` et sur chaque tag Git,
+avec detection des zones modifiees pour eviter les validations inutiles :
 
-- les tests backend avec `./test_backend.sh`
-- le build frontend avec `npm ci` puis `npm run build`
+- les tests backend avec `./test_backend.sh` si `backend/`, `test_backend.sh`,
+  `docker/backend.Dockerfile` ou `.github/workflows/ci.yml` change
+- le build frontend avec `npm ci` puis `npm run build` si `frontend/`,
+  `docker/frontend.Dockerfile` ou `.github/workflows/ci.yml` change
 - le build et la publication des images Docker backend et frontend uniquement
   pour les tags `X.Y.Z`
+
+Sur un tag Git, les validations backend et frontend sont toujours executees
+avant la publication Docker.
 
 Les images sont publiees sur GitHub Container Registry :
 
@@ -511,6 +517,11 @@ git push origin 0.2.1
 Les images Docker ne sont pas publiees depuis les pushes de branche. Elles sont
 publiees uniquement depuis un tag `X.Y.Z`, et ce tag devient la version des
 images. Un tag ne respectant pas ce format echoue avant publication.
+
+Le tag est aussi injecte au build Docker via `APP_VERSION`, ajoute aux images
+comme label `org.opencontainers.image.version`, puis expose au frontend via
+`VITE_APP_VERSION`. La version affichee dans l'interface vient donc de l'image
+Docker publiee, pas d'une variable `APP_VERSION` dans `.env`.
 
 Voir aussi `documentation/ci.md`.
 

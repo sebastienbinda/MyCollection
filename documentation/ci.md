@@ -4,8 +4,10 @@
 
 - Continuous integration is handled by GitHub Actions.
 - The workflow file is `.github/workflows/ci.yml`.
-- Backend tests and the frontend production build run on every push to `main`
-  and on every pushed Git tag.
+- Backend tests run only when backend-related files change, when the workflow
+  file changes, and on every pushed Git tag.
+- The frontend production build runs only when frontend-related files change,
+  when the workflow file changes, and on every pushed Git tag.
 - Docker images are published only when a Git tag matching `X.Y.Z` is pushed.
 - Docker image versions come from the Git tag.
 - Published images are pushed to GitHub Container Registry.
@@ -18,13 +20,21 @@ pushed Git tag in `X.Y.Z` format.
 
 ## Workflow
 
-The GitHub Actions workflow contains three jobs:
+The GitHub Actions workflow contains four jobs:
 
+- `change-detection`: detects whether backend or frontend validation is needed
+  from the files changed by the push.
 - `backend-tests`: runs `./test_backend.sh`.
 - `frontend-build`: installs frontend dependencies with `npm ci` and runs
   `npm run build`.
 - `docker-images`: for Git tags only, builds and pushes the backend and frontend
   Docker images after the validation jobs succeed.
+
+On branch pushes, backend tests run for changes under `backend/`, for
+`test_backend.sh`, for `docker/backend.Dockerfile`, or for
+`.github/workflows/ci.yml`. The frontend build runs for changes under
+`frontend/`, for `docker/frontend.Dockerfile`, or for `.github/workflows/ci.yml`.
+On Git tags, both validations always run before Docker publication.
 
 The `docker-images` job depends on both validation jobs. Docker images must not
 be pushed if tests or frontend build fail. Branch pushes never publish Docker
@@ -41,6 +51,9 @@ version configured in `actions/setup-node`.
 ## Docker Version
 
 Docker image versions are resolved from the Git tag that triggered the workflow.
+The tag is also passed to Docker builds as `APP_VERSION`, stored in the image
+label `org.opencontainers.image.version`, and exposed to the frontend build as
+`VITE_APP_VERSION`.
 
 The tag must match the `X.Y.Z` format, for example:
 
@@ -81,6 +94,8 @@ The workflow requires:
   passed.
 - Publish Docker images only from Git tags matching `X.Y.Z`.
 - Use the release tag as the Docker image version.
+- Do not use `.env` to define the application release version; the release tag is
+  the source of truth for published Docker images.
 - Do not hardcode registry credentials in the repository. Use GitHub Actions
   token permissions or repository secrets.
 - If image names, registry location, trigger branches, or versioning behavior

@@ -12,6 +12,9 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
+ARG APP_VERSION=dev
+ENV VITE_APP_VERSION=${APP_VERSION}
+
 COPY frontend/package*.json ./
 RUN npm ci
 
@@ -19,6 +22,9 @@ COPY frontend .
 RUN npm run build
 
 FROM nginx:1.27-alpine
+
+ARG APP_VERSION=dev
+LABEL org.opencontainers.image.version="${APP_VERSION}"
 
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
