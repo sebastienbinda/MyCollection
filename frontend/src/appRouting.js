@@ -58,6 +58,16 @@ class AppRouting {
   }
 
   /**
+   * Indique si le chemin courant est accessible sans session.
+   *
+   * @param {string} pathname - Chemin d'URL a verifier.
+   * @returns {boolean} `true` si le chemin est public.
+   */
+  static isPublicPath(pathname) {
+    return ["/about", "/auth"].includes(pathname);
+  }
+
+  /**
    * Deduit la vue active depuis le chemin et les parametres d'URL.
    *
    * @param {void} Aucun - Utilise `window.location`.
@@ -67,11 +77,14 @@ class AppRouting {
     if (window.location.pathname === "/about") {
       return "about";
     }
-    if (window.location.pathname === "/accueil") {
-      return "home";
-    }
     if (window.location.pathname === "/auth") {
       return "auth";
+    }
+    if (!AppRouting.hasStoredAccessToken()) {
+      return "about";
+    }
+    if (window.location.pathname === "/accueil") {
+      return "home";
     }
     if (window.location.pathname === "/add-game") {
       return "addGame";

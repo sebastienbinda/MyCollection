@@ -58,7 +58,8 @@ function AboutView({
           <h1>
             <span className="pageTitleWithIcon">
               <ProjectIcon />
-              <span>Qu'est-ce que CloudApplicationApp ?</span>
+              <span className="aboutTitleFull">Qu'est-ce que CloudApplicationApp ?</span>
+              <span className="aboutTitleMobile">CloudApplicationApp</span>
             </span>
           </h1>
           <p className="subtitle">

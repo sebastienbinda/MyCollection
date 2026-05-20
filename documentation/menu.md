@@ -1,60 +1,57 @@
-# Synthèse Menu Principal
+# Main Menu Summary
 
-## À retenir
+## Key Points
 
-- Le menu principal est porté par `frontend/src/components/MainMenu.jsx`.
-- Il doit rester utilisable à la souris, au clavier et sur écran tactile.
-- Le menu se ferme au clic extérieur, à la touche `Escape`, après une action et
-  quand le curseur souris sort du menu.
-- La fermeture à la sortie du menu ne doit pas casser les usages tactiles.
-- Les entrées indisponibles doivent être désactivées plutôt que masquées.
+- The main menu is handled by `frontend/src/components/MainMenu.jsx`.
+- It must remain usable with a mouse, keyboard, and touchscreen.
+- The menu closes on outside click, on the `Escape` key, after an action, and
+  when the mouse cursor leaves the menu.
+- Closing when leaving the menu must not break touch usage.
+- Unavailable entries must be disabled rather than hidden.
 
-## Objectif
+## Objective
 
-Le menu principal donne accès aux vues applicatives transverses depuis les pages
-About et Accueil. Il ne doit pas contenir de logique métier: il déclenche les
-callbacks fournis par `App.jsx` et reflète uniquement l'état de session reçu en
-props.
+The main menu gives access to cross-application views from the About and Accueil
+pages. It must not contain business logic: it triggers callbacks provided by
+`App.jsx` and only reflects the session state received through props.
 
-## Comportement Attendu
+## Expected Behavior
 
-- Le bouton principal ouvre et ferme le menu.
-- Un clic ou pointer event en dehors du menu ferme le menu.
-- La touche `Escape` ferme le menu lorsqu'il est ouvert.
-- Un clic sur une action ferme le menu avant de déclencher la navigation.
-- Sur desktop, la sortie du pointeur souris ferme le menu.
-- Une zone de transition entre le bouton et le panneau peut rester active pour
-  éviter une fermeture involontaire lors du déplacement de la souris.
-- Sur mobile et tactile, la sortie de pointeur ne doit pas provoquer de fermeture
-  accidentelle; filtrer les événements par `pointerType`.
-- Le menu doit conserver `aria-expanded` et `aria-haspopup` sur le bouton
-  déclencheur.
+- The main button opens and closes the menu.
+- A click or pointer event outside the menu closes the menu.
+- The `Escape` key closes the menu when it is open.
+- Clicking an action closes the menu before triggering navigation.
+- On desktop, the menu closes when the mouse pointer leaves it.
+- A transition area between the button and the panel may remain active to avoid
+  accidental closing while moving the mouse.
+- On mobile and touch devices, pointer leave must not cause accidental closing;
+  filter events by `pointerType`.
+- The menu must keep `aria-expanded` and `aria-haspopup` on the trigger button.
 
-## Contraintes d'Accès
+## Access Constraints
 
-- `About` reste toujours accessible.
-- `Accueil` nécessite une session locale active.
-- `Liste de souhaits` nécessite une session locale active.
-- `Voir les jeux` nécessite une session locale active et une plateforme cible.
-- Les entrées non accessibles doivent utiliser `disabled`.
-- Le menu de session reste géré par `AuthStatusMenu`.
+- `About` always remains accessible.
+- `Accueil` requires an active local session.
+- `Liste de souhaits` requires an active local session.
+- `Voir les jeux` requires an active local session and a target platform.
+- Inaccessible entries must use `disabled`.
+- The session menu remains managed by `AuthStatusMenu`.
 
-## Responsivité
+## Responsiveness
 
-- Le libellé `Menu` peut être masqué sur mobile, mais l'icône doit rester visible.
-- La cible tactile doit garder une taille minimale confortable.
-- Ne pas dépendre uniquement du hover: le menu doit fonctionner au clic/tap.
-- Le panneau doit rester positionné sous le bouton et ne pas chevaucher le bouton
-  d'authentification.
+- The `Menu` label may be hidden on mobile, but the icon must remain visible.
+- The touch target must keep a comfortable minimum size.
+- Do not rely only on hover: the menu must work with click/tap.
+- The panel must remain positioned below the button and must not overlap the
+  authentication button.
 
-## Règles de Développement
+## Development Rules
 
-- Ne pas réintroduire un `<details>` non contrôlé si le comportement de fermeture
-  doit rester précis.
-- Ne pas ajouter de dépendance externe pour ce menu.
-- Garder la logique du menu dans `MainMenu.jsx`; les pages ne doivent pas gérer
-  son état ouvert/fermé.
-- Les routes et navigations restent centralisées dans `App.jsx` et
+- Do not reintroduce an uncontrolled `<details>` element if closing behavior must
+  remain precise.
+- Do not add an external dependency for this menu.
+- Keep menu logic in `MainMenu.jsx`; pages must not manage its open/closed state.
+- Routes and navigation remain centralized in `App.jsx` and
   `AppRouting`.
-- Après toute modification du menu, lancer au minimum `npm run build`.
-- Pour une modification visuelle importante, vérifier les états desktop et mobile.
+- After any menu change, run at least `npm run build`.
+- For a significant visual change, verify desktop and mobile states.

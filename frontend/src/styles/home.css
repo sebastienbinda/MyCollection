@@ -78,6 +78,10 @@
   white-space: nowrap;
 }
 
+.aboutTitleMobile {
+  display: none;
+}
+
 .aboutHeader .subtitle {
   max-width: 58rem;
   text-shadow: 0 1px 2px rgba(15, 23, 42, 0.45);
@@ -717,7 +721,15 @@
   }
 
   .aboutHeader h1 {
-    font-size: clamp(0.7rem, 3.15vw, 1.05rem);
+    font-size: clamp(1.15rem, 6vw, 1.55rem);
+  }
+
+  .aboutTitleFull {
+    display: none;
+  }
+
+  .aboutTitleMobile {
+    display: inline;
   }
 
   .pageHeaderTopActions {

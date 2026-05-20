@@ -1,41 +1,39 @@
-# Synthèse Authentification
+# Authentication Summary
 
-## À retenir
+## Key Points
 
-- Tout endpoint backend est protégé sauf `POST /auth/token`.
-- Sans Bearer token: `403`; token invalide ou expiré: `401`.
-- Le frontend ne fait qu'envoyer ou effacer le token, la sécurité reste backend.
-- Tout appel protégé doit utiliser `Authorization: Bearer <access_token>`.
-- Toute exception publique doit être documentée et testée.
+- Every backend endpoint is protected except `POST /auth/token`.
+- Without a Bearer token: `403`; invalid or expired token: `401`.
+- The frontend only sends or clears the token; security remains in the backend.
+- Every protected call must use `Authorization: Bearer <access_token>`.
+- Every public exception must be documented and tested.
 
-Ce document décrit les contraintes fonctionnelles à respecter lors de toute
-évolution touchant l'authentification, les routes backend ou les appels API
-frontend.
+This document describes the functional constraints to follow for any change that
+touches authentication, backend routes, or frontend API calls.
 
-## Objectif
+## Objective
 
-L'application utilise une authentification Bearer simple pour protéger les
-données de collection. Le backend reste l'autorité unique pour valider les
-tokens et décider si une requête est autorisée.
+The application uses simple Bearer authentication to protect collection data.
+The backend remains the single authority for validating tokens and deciding
+whether a request is authorized.
 
-Le frontend ne doit jamais contenir de logique de sécurité métier. Il peut
-masquer des actions ou éviter des appels inutiles, mais toute protection réelle
-doit rester côté backend.
+The frontend must never contain business security logic. It may hide actions or
+avoid unnecessary calls, but all real protection must remain on the backend side.
 
-## Contrat Backend
+## Backend Contract
 
-- Tous les endpoints backend applicatifs doivent exiger un token Bearer valide.
-- La seule route applicative publique est `POST /auth/token`, utilisée pour
-  obtenir un token.
-- Les requêtes CORS `OPTIONS` restent exemptées pour permettre les preflights.
-- Les routes doivent être protégées globalement avec `AuthGuard.protect_all_routes`.
-- Ne pas ajouter de nouvelle route publique sans décision explicite et sans
-  documenter l'exception dans ce fichier.
-- Ne pas dupliquer la logique d'authentification dans les services métier.
-- Ne pas lire ni valider directement le token dans les endpoints, sauf besoin
-  très local et justifié.
+- All application backend endpoints must require a valid Bearer token.
+- The only public application route is `POST /auth/token`, used to obtain a
+  token.
+- CORS `OPTIONS` requests remain exempt to allow preflights.
+- Routes must be protected globally with `AuthGuard.protect_all_routes`.
+- Do not add a new public route without an explicit decision and without
+  documenting the exception in this file.
+- Do not duplicate authentication logic in business services.
+- Do not read or validate the token directly in endpoints, except for a very
+  local and justified need.
 
-## Obtention d'un Token
+## Obtaining a Token
 
 Endpoint:
 
@@ -44,19 +42,19 @@ POST /auth/token
 Content-Type: application/json
 ```
 
-Corps JSON accepté:
+Accepted JSON body:
 
 ```json
 {
   "username": "admin",
-  "password": "mot-de-passe"
+  "password": "password"
 }
 ```
 
-Le backend accepte aussi les champs `client_id` et `client_secret` pour un flux
-compatible client credentials.
+The backend also accepts the `client_id` and `client_secret` fields for a flow
+compatible with client credentials.
 
-Réponse attendue:
+Expected response:
 
 ```json
 {
@@ -66,110 +64,106 @@ Réponse attendue:
 }
 ```
 
-Les identifiants invalides retournent `401` avec un challenge
+Invalid credentials return `401` with a
 `WWW-Authenticate: Bearer realm="CloudCollectionApp"`.
 
-## Appels Protégés
+## Protected Calls
 
-Tous les appels aux endpoints protégés doivent envoyer:
+All calls to protected endpoints must send:
 
 ```http
 Authorization: Bearer <access_token>
 ```
 
-Codes de réponse à préserver:
+Response codes to preserve:
 
-- `403` si aucun token Bearer n'est fourni.
-- `401` si un token est fourni mais invalide ou expiré.
-- `200`, `201`, `400`, `404` ou `500` selon le contrat métier de la route une
-  fois le token validé.
+- `403` if no Bearer token is provided.
+- `401` if a token is provided but is invalid or expired.
+- `200`, `201`, `400`, `404`, or `500` according to the route's business
+  contract once the token has been validated.
 
-Le message actuel pour absence de token est `Token Bearer manquant.`.
+The current message for a missing token is `Token Bearer manquant.`.
 
-## Format et Validation des Tokens
+## Token Format and Validation
 
-- Les tokens sont créés par `AuthTokenService`.
-- Le format interne est `payload.signature`.
-- Le payload contient au minimum `sub`, `iat` et `exp`.
-- La signature utilise HMAC SHA-256 avec le secret applicatif.
-- La durée de vie par défaut est de 3600 secondes.
-- La validation doit vérifier la structure, la signature et l'expiration.
-- Ne jamais accepter un token non signé ou un token dont l'expiration est passée.
+- Tokens are created by `AuthTokenService`.
+- The internal format is `payload.signature`.
+- The payload contains at least `sub`, `iat`, and `exp`.
+- The signature uses HMAC SHA-256 with the application secret.
+- The default lifetime is 3600 seconds.
+- Validation must check the structure, signature, and expiration.
+- Never accept an unsigned token or a token whose expiration has passed.
 
-## Variables d'Environnement
+## Environment Variables
 
-Variables principales:
+Main variables:
 
-- `AUTH_USERNAME`: identifiant autorisé.
-- `AUTH_PASSWORD_ENCRYPTED`: mot de passe applicatif chiffré.
-- `AUTH_SECRET_KEY_ENCRYPTED`: secret de signature chiffré.
-- `AUTH_ENV_ENCRYPTION_KEY`: clé Fernet utilisée pour déchiffrer les secrets.
-- `AUTH_TOKEN_TTL_SECONDS`: durée de vie des tokens Bearer.
+- `AUTH_USERNAME`: authorized username.
+- `AUTH_PASSWORD_ENCRYPTED`: encrypted application password.
+- `AUTH_SECRET_KEY_ENCRYPTED`: encrypted signing secret.
+- `AUTH_ENV_ENCRYPTION_KEY`: Fernet key used to decrypt secrets.
+- `AUTH_TOKEN_TTL_SECONDS`: Bearer token lifetime.
 
-Les variables en clair `AUTH_PASSWORD` et `AUTH_SECRET_KEY` existent comme
-fallback de développement, mais il ne faut pas introduire de secret en dur dans
-le code, les tests, la documentation ou les scripts.
+The plaintext variables `AUTH_PASSWORD` and `AUTH_SECRET_KEY` exist as
+development fallbacks, but no hardcoded secret must be introduced in code,
+tests, documentation, or scripts.
 
-## Contrat Frontend
+## Frontend Contract
 
-- Le token est stocké dans `localStorage` sous `cloudCollectionAccessToken`.
-- L'expiration locale est stockée sous `cloudCollectionAccessTokenExpiresAt`.
-- Tous les appels backend protégés doivent passer par `JeuxVideoApi` ou réutiliser
+- The token is stored in `localStorage` under `cloudCollectionAccessToken`.
+- Local expiration is stored under `cloudCollectionAccessTokenExpiresAt`.
+- All protected backend calls must go through `JeuxVideoApi` or reuse
   `JeuxVideoApi.getAuthorizationHeaders()`.
-- Le frontend doit éviter d'appeler les endpoints protégés lorsqu'aucun token
-  n'est stocké.
-- La page publique non connectée est `AboutView` sur `/about`.
-- L'accueil authentifié est `HomeView` sur `/accueil`.
-- La route `/` redirige fonctionnellement vers `/about` sans token et vers
-  `/accueil` avec token.
-- En cas de refus d'un token envoyé (`401` ou `403`), le frontend doit nettoyer
-  la session locale et ouvrir le flux de reconnexion.
+- The frontend must avoid calling protected endpoints when no token is stored.
+- The public unauthenticated page is `AboutView` on `/about`.
+- The authenticated home page is `HomeView` on `/accueil`.
+- The `/` route functionally redirects to `/about` without a token and to
+  `/accueil` with a token.
+- If a sent token is rejected (`401` or `403`), the frontend must clear the local
+  session and open the sign-in flow again.
 
-## Découverte des Routes
+## Route Discovery
 
-`GET /api/routes` est lui-même protégé. Il sert au frontend à calculer les
-permissions d'action, mais il ne doit pas devenir une source de vérité de
-sécurité. La sécurité reste assurée par le backend avant chaque requête.
+`GET /api/routes` is itself protected. It helps the frontend calculate action
+permissions, but it must not become a source of truth for security. Security
+remains enforced by the backend before each request.
 
-Les routes retournées par ce catalogue doivent indiquer correctement:
+The routes returned by this catalog must correctly indicate:
 
 - `requires_auth`
 - `access`
 - `auth_schemes`
 
-Toute route protégée doit annoncer `requires_auth: true` et `auth_schemes:
+Every protected route must announce `requires_auth: true` and `auth_schemes:
 ["Bearer"]`.
 
-## Tests à Maintenir
+## Tests to Maintain
 
-Toute modification de l'authentification doit mettre à jour ou ajouter des tests
-backend couvrant au minimum:
+Any authentication change must update or add backend tests covering at least:
 
-- `POST /auth/token` avec identifiants valides.
-- `POST /auth/token` avec identifiants invalides.
-- Un endpoint protégé sans token qui retourne `403`.
-- Un endpoint protégé avec token invalide qui retourne `401`.
-- Un endpoint protégé avec token valide qui conserve son comportement métier.
-- Le catalogue `/api/routes` et ses indicateurs d'authentification.
+- `POST /auth/token` with valid credentials.
+- `POST /auth/token` with invalid credentials.
+- A protected endpoint without a token returning `403`.
+- A protected endpoint with an invalid token returning `401`.
+- A protected endpoint with a valid token preserving its business behavior.
+- The `/api/routes` catalog and its authentication indicators.
 
-Après modification, lancer:
+After modification, run:
 
 ```bash
 ./test_backend.sh
 ```
 
-Si le changement impacte le comportement runtime, reconstruire les images Docker
-concernées lorsque le daemon Docker est disponible.
+If the change impacts runtime behavior, rebuild the affected Docker images when
+the Docker daemon is available.
 
-## Règles de Développement
+## Development Rules
 
-- Ne jamais exposer une donnée de collection depuis le backend sans token.
-- Ne jamais réintroduire un mode lecture publique pour masquer seulement certains
-  champs côté backend.
-- Ne jamais hardcoder de secret, token, mot de passe ou clé de signature.
-- Ne pas ajouter de dépendance externe d'authentification sans justification
-  forte.
-- Préférer l'extension de `AuthGuard` et `AuthTokenService` aux vérifications
-  dispersées.
-- Toute exception publique doit être explicite, testée et mentionnée dans ce
+- Never expose collection data from the backend without a token.
+- Never reintroduce a public read mode that only hides some fields on the backend
+  side.
+- Never hardcode a secret, token, password, or signing key.
+- Do not add an external authentication dependency without strong justification.
+- Prefer extending `AuthGuard` and `AuthTokenService` over scattered checks.
+- Every public exception must be explicit, tested, and mentioned in this
   document.

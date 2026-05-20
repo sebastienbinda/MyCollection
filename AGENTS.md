@@ -50,11 +50,13 @@
 - Before changing authentication, backend route protection, frontend session handling, or access control, read and respect `documentation/authentication.md`.
 - Before changing the main navigation menu, responsive menu behavior, or shared menu actions, read and respect `documentation/menu.md`.
 - Before changing the public About page, its route, copy, image, or responsive layout, read and respect `documentation/about.md`.
+- Before adding or modifying any frontend page, read and respect `documentation/site-plan.md`.
 
 ## Change Governance
 
 - Ask for explicit confirmation before making any modification that changes a paradigm, invariant, or expected behavior described in any related `documentation/*.md` file.
+- When adding or modifying any frontend page, explicitly state whether the rules from `documentation/site-plan.md` were respected for every site page.
 - When adding a new feature, propose updates to existing `documentation/*.md` files if the feature changes an already documented area, and wait for confirmation before applying those documentation changes.
 - When adding a new feature that creates a completely new functional block, propose creating a new `documentation/*.md` file for that block, and wait for confirmation before creating it.
 - After each code modification, state whether the rules from each `documentation/*.md` file related to the request were respected, with one explicit information line per documentation file.
-- In the documentation compliance report, prefix each documentation filename with a color status: Green for respected, Orange for not concerned, and Red for concerned but conflicting or not respected.
+- In the documentation compliance report, prefix each documentation filename with a visible colored status marker instead of the color name: 🟢 only when the file is concerned, verified, and respected; 🟠 when the file is not concerned; and 🔴 when the file is concerned but conflicting, not respected, or verified and found not respected.

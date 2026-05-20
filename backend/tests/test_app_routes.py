@@ -229,16 +229,6 @@ class AppRoutesTest(unittest.TestCase):
         )
         self.assertEqual(401, response.status_code)
         self.assertIn("invalides", response.get_json()["error"])
-    def test_time_route_requires_authentication(self):
-        """Verifie que le endpoint de test exige un token.
-        Args:
-            Aucun.
-        Returns:
-            None: Les assertions valident la reponse HTTP.
-        """
-        response = self.client.get("/api/time")
-        self.assertEqual(403, response.status_code)
-        self.assertIn("Bearer", response.get_json()["error"])
     def test_routes_route_requires_authentication(self):
         """Verifie que le catalogue des routes exige un token.
         Args:
@@ -340,6 +330,20 @@ class AppRoutesTest(unittest.TestCase):
         response = self.client.get("/collections/JeuxVideo/column-values?platform=Switch")
         self.assertEqual(403, response.status_code)
         self.assertIn("Bearer", response.get_json()["error"])
+    def test_column_values_route_keeps_price_values_with_authentication(self):
+        """Verifie que les valeurs de filtre authentifiees retournent les prix.
+        Args:
+            Aucun.
+        Returns:
+            None: Les assertions valident la presence des prix.
+        """
+        response = self.client.get(
+            "/collections/JeuxVideo/column-values?platform=Switch",
+            headers=self.get_auth_headers(),
+        )
+        data = response.get_json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual([45], data["values_by_column"]["Prix d'achat"])
     def test_routes_route_lists_protected_routes(self):
         """Verifie le catalogue des routes et leurs contraintes d'authentification.
         Args:

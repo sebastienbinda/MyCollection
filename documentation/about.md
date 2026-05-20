@@ -1,56 +1,56 @@
-# Synthèse Page About
+# About Page Summary
 
-## À retenir
+## Key Points
 
-- La page About est la page publique non connectée de l'application.
-- Elle est rendue par `frontend/src/components/AboutView.jsx`.
-- Sa route est `/about`; l'accueil connecté reste `/accueil`.
-- Elle ne doit pas appeler d'endpoint backend protégé sans token.
-- Elle utilise l'image statique `/about-home-image.jpg`, extraite de l'onglet
-  `Accueil` du fichier `collection.ods`.
+- The About page is the application's public unauthenticated page.
+- It is rendered by `frontend/src/components/AboutView.jsx`.
+- Its route is `/about`; the authenticated home page remains `/accueil`.
+- It must not call a protected backend endpoint without a token.
+- It uses the static image `/about-home-image.jpg`, extracted from the
+  `Accueil` sheet of the `collection.ods` file.
 
-## Objectif
+## Objective
 
-La page About présente les fonctionnalités de CloudCollectionApp sans entrer
-dans les détails techniques. Elle doit expliquer l'intérêt de l'application à un
-visiteur non connecté, tout en laissant l'accès à la connexion et au menu
-principal.
+The About page presents CloudCollectionApp's features without going into
+technical details. It must explain the value of the application to an
+unauthenticated visitor while keeping access to sign-in and the main menu
+available.
 
-## Contraintes Fonctionnelles
+## Functional Constraints
 
-- La page doit rester accessible sans authentification.
-- Elle ne doit pas exposer de données de collection issues d'un appel backend.
-- Le contenu doit rester descriptif et non technique.
-- Le texte doit parler des usages: explorer la collection, suivre la liste de
-  souhaits, consulter l'accueil connecté et maintenir les données.
-- La navigation doit passer par `MainMenu`.
-- Les actions réservées à une session connectée doivent rester désactivées via
-  le menu lorsque l'utilisateur n'est pas connecté.
+- The page must remain accessible without authentication.
+- It must not expose collection data from a backend call.
+- The content must remain descriptive and non-technical.
+- The text must describe use cases: exploring the collection, tracking the wish
+  list, viewing the authenticated home page, and maintaining data.
+- Navigation must go through `MainMenu`.
+- Actions reserved for an authenticated session must remain disabled through the
+  menu when the user is not signed in.
 
 ## Image
 
-- L'image affichée est `frontend/public/about-home-image.jpg`.
-- Cette image provient de l'onglet `Accueil` de `collection.ods`.
-- Ne pas remplacer cette image par une URL externe.
-- Si l'image de l'onglet `Accueil` change dans l'ODS, ré-extraire l'asset public
-  et vérifier le rendu responsive.
-- L'image doit garder un texte alternatif clair.
+- The displayed image is `frontend/public/about-home-image.jpg`.
+- This image comes from the `Accueil` sheet of `collection.ods`.
+- Do not replace this image with an external URL.
+- If the image in the `Accueil` sheet changes in the ODS file, re-extract the
+  public asset and verify the responsive rendering.
+- The image must keep clear alternative text.
 
-## UI et Responsivité
+## UI and Responsiveness
 
-- Le composant doit rester distinct de `HomeView`.
-- Les styles spécifiques utilisent les classes `aboutShell`, `aboutHeader`,
-  `aboutContent`, `aboutHomeImage`, `aboutIntro` et `aboutFeatureGrid`.
-- La grille des fonctionnalités doit rester lisible sur desktop et se replier
-  proprement sur mobile.
-- Éviter les détails techniques, les longues listes et les textes trop denses.
-- Ne pas transformer cette page en landing page marketing complexe.
+- The component must remain separate from `HomeView`.
+- Specific styles use the classes `aboutShell`, `aboutHeader`,
+  `aboutContent`, `aboutHomeImage`, `aboutIntro` and `aboutFeatureGrid`.
+- The feature grid must remain readable on desktop and collapse cleanly on
+  mobile.
+- Avoid technical details, long lists, and overly dense text.
+- Do not turn this page into a complex marketing landing page.
 
-## Règles de Développement
+## Development Rules
 
-- Lire aussi `documentation/menu.md` avant de modifier le menu de la page.
-- Lire aussi `documentation/authentication.md` avant tout changement de route ou
-  d'accès à la page.
-- Après modification visuelle ou JSX, lancer au minimum `npm run build`.
-- Si l'asset public change, reconstruire l'image Docker frontend lorsque Docker
-  est disponible.
+- Also read `documentation/menu.md` before changing the page menu.
+- Also read `documentation/authentication.md` before any route or page access
+  change.
+- After a visual or JSX change, run at least `npm run build`.
+- If the public asset changes, rebuild the frontend Docker image when Docker is
+  available.

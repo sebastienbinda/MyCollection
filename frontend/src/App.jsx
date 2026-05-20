@@ -286,23 +286,34 @@ function App() {
   useEffect(() => {
     const handlePopState = () => {
       clearDeleteGameFeedback();
-      if (window.location.pathname === "/about") {
+      const pathname = window.location.pathname;
+      if (pathname === "/about") {
         setCurrentView("about");
         return;
       }
-      if (window.location.pathname === "/accueil") {
+      if (pathname === "/auth") {
+        setCurrentView("auth");
+        return;
+      }
+      if (!AppRouting.hasStoredAccessToken()) {
+        setSelectedPlatform("");
+        setCurrentView("about");
+        window.history.replaceState({}, "", "/about");
+        return;
+      }
+      if (pathname === "/accueil") {
         setCurrentView("home");
         return;
       }
-      if (window.location.pathname === "/add-game") {
+      if (pathname === "/add-game") {
         setCurrentView("addGame");
         return;
       }
-      if (window.location.pathname === "/admin-dashboard") {
+      if (pathname === "/admin-dashboard") {
         setCurrentView("adminDashboard");
         return;
       }
-      if (window.location.pathname === "/wishlist") {
+      if (pathname === "/wishlist") {
         setSelectedPlatform(AppRouting.wishlistSheetName);
         setCurrentView("wishlist");
         return;
@@ -407,7 +418,7 @@ function App() {
   }, [currentView, gameForm.platform, odsReloadKey, hasAccessToken]);
 
   useEffect(() => {
-    if (hasAccessToken || currentView !== "home") {
+    if (hasAccessToken || currentView === "about" || currentView === "auth") {
       return;
     }
     setCurrentView("about");
@@ -422,7 +433,7 @@ function App() {
   }, [currentView, hasAccessToken]);
 
   useEffect(() => {
-    if (hasAccessToken || currentView !== "about" || window.location.pathname !== "/") {
+    if (hasAccessToken || currentView !== "about" || AppRouting.isPublicPath(window.location.pathname)) {
       return;
     }
     window.history.replaceState({}, "", "/about");
