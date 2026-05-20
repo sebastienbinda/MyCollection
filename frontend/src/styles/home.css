@@ -22,6 +22,110 @@
   position: relative;
 }
 
+.aboutShell {
+  gap: 1.5rem;
+}
+
+.aboutHeader {
+  background: #0f172a;
+  min-height: 24rem;
+  overflow: hidden;
+}
+
+.aboutHeader::before {
+  background: linear-gradient(90deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.52));
+  content: "";
+  inset: 0;
+  position: absolute;
+  z-index: 1;
+}
+
+.aboutHeaderImage {
+  height: 100%;
+  inset: 0;
+  object-fit: cover;
+  position: absolute;
+  width: 100%;
+  z-index: 0;
+}
+
+.aboutHeaderContent {
+  color: #ffffff;
+  box-sizing: border-box;
+  max-width: min(680px, calc(100% - 4rem));
+  position: relative;
+  z-index: 2;
+}
+
+.aboutHeader .eyebrow,
+.aboutHeader .subtitle {
+  color: #f8fafc;
+}
+
+.aboutHeader h1,
+.aboutHeader .pageTitleWithIcon {
+  color: #ffffff;
+}
+
+.aboutHeader h1 {
+  font-size: clamp(1.1rem, 2.7vw, 2.05rem);
+  line-height: 1.08;
+  white-space: nowrap;
+}
+
+.aboutHeader .pageTitleWithIcon {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.aboutHeader .subtitle {
+  max-width: 58rem;
+  text-shadow: 0 1px 2px rgba(15, 23, 42, 0.45);
+}
+
+.aboutContent {
+  display: grid;
+  gap: 1.25rem;
+  margin: 0 auto;
+  max-width: 1040px;
+  width: min(100%, 1040px);
+}
+
+.aboutIntro {
+  background: #ffffff;
+  border: 1px solid #dbe4f0;
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.aboutIntro h2,
+.aboutFeatureGrid h3 {
+  color: #0f172a;
+  letter-spacing: 0;
+  margin: 0 0 0.55rem;
+}
+
+.aboutIntro p,
+.aboutFeatureGrid p {
+  color: #475569;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.aboutFeatureGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.aboutFeatureGrid article {
+  background: #ffffff;
+  border: 1px solid #dbe4f0;
+  border-radius: 8px;
+  min-height: 10rem;
+  padding: 1.1rem;
+}
+
 .closeSearchButton {
   align-items: center;
   background: #e5e7eb;
@@ -148,6 +252,12 @@
   margin-bottom: 0.45rem;
 }
 
+.pageHeader.aboutHeader h1 {
+  font-size: clamp(1.1rem, 2.7vw, 2.05rem);
+  line-height: 1.08;
+  white-space: nowrap;
+}
+
 .pageHeaderTopActions {
   align-items: flex-start;
   display: flex;
@@ -183,9 +293,21 @@
   position: relative;
 }
 
-.pageHeaderOptionsMenu summary {
+.pageHeaderOptionsMenu.isOpen::after {
+  content: "";
+  height: 0.55rem;
+  left: 0;
+  min-width: 11rem;
+  position: absolute;
+  top: 100%;
+  width: 100%;
+  z-index: 4;
+}
+
+.pageHeaderOptionsTrigger {
   align-items: center;
   background: #111827;
+  border: 0;
   border-radius: 6px;
   box-sizing: border-box;
   color: #ffffff;
@@ -199,15 +321,12 @@
   user-select: none;
 }
 
-.pageHeaderOptionsMenu summary::-webkit-details-marker {
-  display: none;
-}
-
-.pageHeaderOptionsMenu summary:hover {
+.pageHeaderOptionsTrigger:hover,
+.pageHeaderOptionsTrigger[aria-expanded="true"] {
   background: #374151;
 }
 
-.pageHeaderOptionsMenu:not([open]) .pageHeaderActions {
+.pageHeaderActions[hidden] {
   display: none;
 }
 
@@ -513,15 +632,30 @@
 
   .statsGrid,
   .platformGrid,
-  .searchResults {
+  .searchResults,
+  .aboutFeatureGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 620px) {
   .searchResults,
-  .searchResultCard dl {
+  .searchResultCard dl,
+  .aboutFeatureGrid {
     grid-template-columns: 1fr;
+  }
+
+  .aboutHeader {
+    min-height: 17rem;
+  }
+
+  .aboutContent {
+    gap: 0.75rem;
+  }
+
+  .aboutIntro,
+  .aboutFeatureGrid article {
+    padding: 0.85rem;
   }
 
   .platformSection {
@@ -582,6 +716,10 @@
     margin-bottom: 0.2rem;
   }
 
+  .aboutHeader h1 {
+    font-size: clamp(0.7rem, 3.15vw, 1.05rem);
+  }
+
   .pageHeaderTopActions {
     left: 0.75rem;
     right: 0.75rem;
@@ -592,14 +730,14 @@
     position: static;
   }
 
-  .pageHeaderOptionsMenu summary {
+  .pageHeaderOptionsTrigger {
     box-sizing: border-box;
     min-height: 2rem;
     min-width: 2rem;
     padding: 0.4rem;
   }
 
-  .pageHeaderOptionsMenu summary span {
+  .pageHeaderOptionsTrigger span {
     display: none;
   }
 

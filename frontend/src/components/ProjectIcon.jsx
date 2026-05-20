@@ -20,7 +20,7 @@
  * @returns {import("react").JSX.Element} Image de l'icone projet.
  */
 function ProjectIcon({ className = "projectIcon", label = "CloudCollectionApp" }) {
-  return <img className={className} src="/favicon.svg" alt={label} />;
+  return <img className={className} src="/favicon.svg?v=ff7-library-icon-v5" alt={label} />;
 }
 
 export default ProjectIcon;

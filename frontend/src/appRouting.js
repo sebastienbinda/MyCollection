@@ -45,12 +45,31 @@ class AppRouting {
   }
 
   /**
+   * Indique si un token Bearer est stocke cote navigateur.
+   *
+   * @param {void} Aucun - Lit le stockage local du navigateur.
+   * @returns {boolean} `true` si un token d'acces existe.
+   */
+  static hasStoredAccessToken() {
+    if (typeof window === "undefined" || !window.localStorage) {
+      return false;
+    }
+    return Boolean(window.localStorage.getItem("cloudCollectionAccessToken"));
+  }
+
+  /**
    * Deduit la vue active depuis le chemin et les parametres d'URL.
    *
    * @param {void} Aucun - Utilise `window.location`.
-   * @returns {"home"|"games"|"addGame"|"adminDashboard"|"auth"|"wishlist"} Identifiant de vue.
+   * @returns {"about"|"home"|"games"|"addGame"|"adminDashboard"|"auth"|"wishlist"} Identifiant de vue.
    */
   static getViewFromUrl() {
+    if (window.location.pathname === "/about") {
+      return "about";
+    }
+    if (window.location.pathname === "/accueil") {
+      return "home";
+    }
     if (window.location.pathname === "/auth") {
       return "auth";
     }
@@ -63,7 +82,10 @@ class AppRouting {
     if (window.location.pathname === "/wishlist") {
       return "wishlist";
     }
-    return AppRouting.getPlatformFromUrl() ? "games" : "home";
+    if (AppRouting.getPlatformFromUrl()) {
+      return "games";
+    }
+    return AppRouting.hasStoredAccessToken() ? "home" : "about";
   }
 }
 

@@ -43,7 +43,9 @@ class JeuxVideoApi {
    * @returns {Promise<Object>} Objet contenant `routes`.
    */
   static async fetchRoutes() {
-    return this.fetchJson("/api/routes", "Impossible de recuperer les routes backend.");
+    return this.fetchJson("/api/routes", "Impossible de recuperer les routes backend.", {
+      headers: this.getAuthorizationHeaders(),
+    });
   }
 
   /**
@@ -67,7 +69,10 @@ class JeuxVideoApi {
   static async fetchPlatforms() {
     return this.fetchJson(
       "/collections/JeuxVideo/platforms",
-      "Impossible de recuperer les plateformes."
+      "Impossible de recuperer les plateformes.",
+      {
+        headers: this.getAuthorizationHeaders(),
+      }
     );
   }
 
@@ -450,7 +455,7 @@ class JeuxVideoApi {
    * @returns {boolean} `true` si le backend refuse un token Bearer envoye.
    */
   static isExpiredAuthenticatedResponse(response, options = {}) {
-    return response.status === 401 && this.hasBearerAuthorization(options);
+    return [401, 403].includes(response.status) && this.hasBearerAuthorization(options);
   }
 
   /**

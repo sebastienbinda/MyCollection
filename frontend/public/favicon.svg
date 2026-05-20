@@ -10,18 +10,52 @@
   Auteurs : Codex et Binda Sébastien
   Licence : Apache 2.0
 
-  Description : favicon SVG representant une manette devant une bibliotheque de jeux.
+  Description : favicon SVG original melant une grande epee stylisee et une bibliotheque,
+  avec une palette vert mako et bleu nuit inspiree de l'ambiance JRPG 32-bit.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="CloudCollectionApp">
-  <rect width="64" height="64" rx="14" fill="#0f172a" />
-  <rect x="13" y="12" width="38" height="28" rx="4" fill="#f8fafc" />
-  <rect x="17" y="16" width="6" height="20" rx="1.5" fill="#2563eb" />
-  <rect x="26" y="16" width="5" height="20" rx="1.5" fill="#16a34a" />
-  <rect x="34" y="16" width="5" height="20" rx="1.5" fill="#f59e0b" />
-  <rect x="42" y="16" width="5" height="20" rx="1.5" fill="#dc2626" />
-  <path d="M14 42c2.5-6 7-8 13-6l4 1h2l4-1c6-2 10.5 0 13 6l2 7c.8 3-1 5-3.6 5-1.8 0-3.2-.8-4.4-2.2L40.8 48H23.2L20 51.8C18.8 53.2 17.4 54 15.6 54 13 54 11.2 52 12 49l2-7Z" fill="#e2e8f0" />
-  <circle cx="24" cy="43" r="2" fill="#0f172a" />
-  <rect x="20" y="42" width="8" height="2" rx="1" fill="#0f172a" />
-  <circle cx="41" cy="42" r="1.8" fill="#2563eb" />
-  <circle cx="46" cy="45" r="1.8" fill="#16a34a" />
+  <defs>
+    <linearGradient id="makoBackground" x1="8" y1="58" x2="56" y2="6" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#07111f" />
+      <stop offset="0.48" stop-color="#123552" />
+      <stop offset="1" stop-color="#2ef2b3" />
+    </linearGradient>
+    <linearGradient id="swordBlade" x1="24" y1="50" x2="48" y2="7" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#cbd5e1" />
+      <stop offset="0.45" stop-color="#f8fafc" />
+      <stop offset="1" stop-color="#8fffe2" />
+    </linearGradient>
+    <radialGradient id="makoGlow" cx="47" cy="15" r="23" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d8fff4" stop-opacity="0.95" />
+      <stop offset="0.38" stop-color="#45f2ba" stop-opacity="0.62" />
+      <stop offset="1" stop-color="#45f2ba" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="13" fill="url(#makoBackground)" />
+  <circle cx="47" cy="15" r="24" fill="url(#makoGlow)" />
+
+  <path d="M10 46h30v7H10z" fill="#07111f" opacity="0.72" />
+  <rect x="12" y="18" width="7" height="28" rx="1.4" fill="#f8fafc" />
+  <rect x="21" y="15" width="6" height="31" rx="1.4" fill="#28d7a7" />
+  <rect x="29" y="20" width="7" height="26" rx="1.4" fill="#7dd3fc" />
+  <rect x="38" y="17" width="6" height="29" rx="1.4" fill="#dbeafe" />
+  <path d="M13.5 24h4M22.5 22h3M30.5 27h4M39.5 23h3" stroke="#07111f" stroke-width="1.2" stroke-linecap="round" opacity="0.48" />
+
+  <g transform="rotate(8 47 33)">
+    <path d="M48 5 56 12 51 41 47 47 42 41 38 12 46 5Z" fill="#0f172a" opacity="0.38" />
+    <path d="M46 3 54 11 49 39 45 45 40 39 37 11 45 3Z" fill="url(#swordBlade)" />
+    <path d="M45 4v41" stroke="#0f172a" stroke-width="1.6" stroke-linecap="round" opacity="0.42" />
+    <path d="M41 12 45 5 49 12" fill="#f8fafc" opacity="0.52" />
+    <path d="M34 41h23" stroke="#12233a" stroke-width="6.5" stroke-linecap="round" />
+    <path d="M36 41h19" stroke="#8fffe2" stroke-width="2.3" stroke-linecap="round" opacity="0.76" />
+    <rect x="41" y="40" width="8" height="4" rx="1.2" fill="#45f2ba" />
+    <rect x="40" y="43" width="10" height="15" rx="2" fill="#0f172a" />
+    <path d="M42 46h6M42 50h6M42 54h6" stroke="#45f2ba" stroke-width="1.4" stroke-linecap="round" opacity="0.9" />
+    <path d="M45 43v15" stroke="#d8fff4" stroke-width="1" stroke-linecap="round" opacity="0.42" />
+    <path d="M40 58h10l-2.5 4h-5Z" fill="#45f2ba" />
+    <circle cx="45" cy="60" r="1.25" fill="#0f172a" opacity="0.55" />
+  </g>
+
+  <path d="M8 52h44" stroke="#d8fff4" stroke-width="1.5" stroke-linecap="round" opacity="0.38" />
 </svg>

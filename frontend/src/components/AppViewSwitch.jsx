@@ -14,6 +14,7 @@
  */
 import AddGameView from "./AddGameView";
 import AdminDashboardView from "./AdminDashboardView";
+import AboutView from "./AboutView";
 import AuthView from "./AuthView";
 import HomeView from "./HomeView";
 import PlatformDetailView from "./PlatformDetailView";
@@ -34,6 +35,10 @@ class AppViewSwitch {
       return this.renderHome(props);
     }
 
+    if (props.currentView === "about") {
+      return this.renderAbout(props);
+    }
+
     if (props.currentView === "addGame") {
       return this.renderAddGame(props);
     }
@@ -51,6 +56,29 @@ class AppViewSwitch {
     }
 
     return this.renderPlatform(props);
+  }
+
+  /**
+   * Rend la page About publique.
+   *
+   * @param {Object} props - Etat et callbacks de navigation.
+   * @returns {import("react").JSX.Element} Vue About.
+   */
+  static renderAbout(props) {
+    return (
+      <AboutView
+        isAuthenticated={props.actionPermissions.isAuthenticated}
+        authenticatedUsername={props.authenticatedUsername}
+        platforms={props.platforms}
+        selectedPlatform={props.selectedPlatform}
+        onOpenAbout={props.openAbout}
+        onOpenHome={props.goHome}
+        onOpenWishlist={props.openWishlist}
+        onOpenPlatform={props.openPlatform}
+        onOpenAdminDashboard={props.openAdminDashboard}
+        onLogout={props.logout}
+      />
+    );
   }
 
   /**
@@ -74,6 +102,8 @@ class AppViewSwitch {
         homeSearchError={props.homeSearchError}
         isAuthenticated={props.actionPermissions.isAuthenticated}
         authenticatedUsername={props.authenticatedUsername}
+        onOpenAbout={props.openAbout}
+        onOpenHome={props.goHome}
         onOpenAdminDashboard={props.openAdminDashboard}
         onLogout={props.logout}
         onOpenWishlist={props.openWishlist}
@@ -147,7 +177,7 @@ class AppViewSwitch {
       <AuthView
         isAuthenticated={props.actionPermissions.isAuthenticated}
         onAuthenticated={props.goHome}
-        onBack={props.goHome}
+        onBack={props.openAbout}
       />
     );
   }

@@ -77,6 +77,7 @@ function App() {
   const gameMutations = usePlatformGameMutations(selectedPlatform, reloadOds, reloadGames);
   const wishlistMutations = useWishlistGameMutations(reloadOds, reloadGames);
   const odsDownload = useOdsDownload();
+  const hasAccessToken = JeuxVideoApi.getAccessToken().trim().length > 0;
   /**
    * Synchronise l'URL avec la plateforme selectionnee.
    *
@@ -105,15 +106,27 @@ function App() {
   };
 
   /**
-   * Revient a la page d'accueil.
+   * Revient a la page d'accueil authentifiee.
    *
    * @param {void} Aucun - Utilise l'etat React et l'historique navigateur.
-   * @returns {void} Met `currentView` a `home` et remplace l'URL par `/`.
+   * @returns {void} Met `currentView` a `home` et remplace l'URL par `/accueil`.
    */
   const goHome = () => {
     clearDeleteGameFeedback();
     setCurrentView("home");
-    window.history.pushState({}, "", "/");
+    window.history.pushState({}, "", "/accueil");
+  };
+
+  /**
+   * Ouvre la page About publique.
+   *
+   * @param {void} Aucun - Utilise l'etat React et l'historique navigateur.
+   * @returns {void} Met `currentView` a `about` et pousse `/about`.
+   */
+  const openAbout = () => {
+    clearDeleteGameFeedback();
+    setCurrentView("about");
+    window.history.pushState({}, "", "/about");
   };
 
   /**
@@ -210,6 +223,12 @@ function App() {
 
   useEffect(() => {
     const fetchHomeStats = async () => {
+      if (!hasAccessToken || currentView !== "home") {
+        setHomeStats(null);
+        setIsLoadingHome(false);
+        return;
+      }
+
       try {
         setIsLoadingHome(true);
         setError("");
@@ -223,10 +242,16 @@ function App() {
     };
 
     fetchHomeStats();
-  }, [odsReloadKey, actionPermissions.isAuthenticated]);
+  }, [odsReloadKey, actionPermissions.isAuthenticated, currentView, hasAccessToken]);
 
   useEffect(() => {
     const fetchPlatforms = async () => {
+      if (!hasAccessToken) {
+        setPlatforms([]);
+        setIsLoadingPlatforms(false);
+        return;
+      }
+
       try {
         setIsLoadingPlatforms(true);
         setError("");
@@ -256,11 +281,19 @@ function App() {
     };
 
     fetchPlatforms();
-  }, [currentView, odsReloadKey]);
+  }, [currentView, odsReloadKey, actionPermissions.isAuthenticated, hasAccessToken]);
 
   useEffect(() => {
     const handlePopState = () => {
       clearDeleteGameFeedback();
+      if (window.location.pathname === "/about") {
+        setCurrentView("about");
+        return;
+      }
+      if (window.location.pathname === "/accueil") {
+        setCurrentView("home");
+        return;
+      }
       if (window.location.pathname === "/add-game") {
         setCurrentView("addGame");
         return;
@@ -280,7 +313,7 @@ function App() {
         setSelectedPlatform(platformFromUrl);
         setCurrentView("games");
       } else {
-        setCurrentView("home");
+        setCurrentView(AppRouting.hasStoredAccessToken() ? "home" : "about");
       }
     };
 
@@ -290,8 +323,9 @@ function App() {
 
   useEffect(() => {
     const fetchGames = async () => {
-      if (!selectedPlatform) {
+      if (!hasAccessToken || !selectedPlatform) {
         setGames([]);
+        setIsLoadingGames(false);
         return;
       }
 
@@ -310,11 +344,11 @@ function App() {
     };
 
     fetchGames();
-  }, [selectedPlatform, gamesReloadKey, actionPermissions.isAuthenticated]);
+  }, [selectedPlatform, gamesReloadKey, actionPermissions.isAuthenticated, hasAccessToken]);
 
   useEffect(() => {
     const fetchColumnValues = async () => {
-      if (!selectedPlatform) {
+      if (!hasAccessToken || !selectedPlatform) {
         setValuesByColumn({});
         return;
       }
@@ -328,7 +362,7 @@ function App() {
     };
 
     fetchColumnValues();
-  }, [selectedPlatform, gamesReloadKey, actionPermissions.isAuthenticated]);
+  }, [selectedPlatform, gamesReloadKey, actionPermissions.isAuthenticated, hasAccessToken]);
 
   useEffect(() => {
     const refreshHomeSearchResults = async () => {
@@ -356,7 +390,7 @@ function App() {
   useEffect(() => {
     /** Charge les suggestions du formulaire. @param {void} Aucun. @returns {Promise<void>} Met a jour les valeurs. */
     const fetchAddGameColumnValues = async () => {
-      if (currentView !== "addGame") {
+      if (!hasAccessToken || currentView !== "addGame") {
         setAddGameColumnValues({});
         return;
       }
@@ -370,7 +404,29 @@ function App() {
     };
 
     fetchAddGameColumnValues();
-  }, [currentView, gameForm.platform, odsReloadKey]);
+  }, [currentView, gameForm.platform, odsReloadKey, hasAccessToken]);
+
+  useEffect(() => {
+    if (hasAccessToken || currentView !== "home") {
+      return;
+    }
+    setCurrentView("about");
+    window.history.replaceState({}, "", "/about");
+  }, [currentView, hasAccessToken]);
+
+  useEffect(() => {
+    if (!hasAccessToken || currentView !== "home" || window.location.pathname !== "/") {
+      return;
+    }
+    window.history.replaceState({}, "", "/accueil");
+  }, [currentView, hasAccessToken]);
+
+  useEffect(() => {
+    if (hasAccessToken || currentView !== "about" || window.location.pathname !== "/") {
+      return;
+    }
+    window.history.replaceState({}, "", "/about");
+  }, [currentView, hasAccessToken]);
 
   /** Soumet un nouveau jeu. @param {React.FormEvent<HTMLFormElement>} event - Soumission. @returns {Promise<void>} Recharge la vue. */
   const submitNewGame = async (event) => {
@@ -498,7 +554,7 @@ function App() {
         isSavingWishlistGame: wishlistMutations.isSavingWishlistGame,
         deleteGameMessage: gameMutations.deleteGameMessage, deleteGameError: gameMutations.deleteGameError,
         downloadError: odsDownload.downloadError, isDownloadingOds: odsDownload.isDownloadingOds,
-        openAddGamePage, openAdminDashboard, openWishlist, openPlatform, setHomeSearchQuery,
+        openAddGamePage, openAdminDashboard, openAbout, openWishlist, openPlatform, setHomeSearchQuery,
         logout: JeuxVideoApi.confirmAndClearAccessToken, searchGamesByName, closeHomeSearch,
         resetOdsCache, downloadOdsFile: odsDownload.downloadOdsFile, goHome, submitNewGame,
         updateGameFormValue, addWishlistGameToPlatform, deleteWishlistGame, toggleSort, setColumnFilters,

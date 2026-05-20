@@ -25,7 +25,10 @@ class AddGameChoicesApi {
     const query = platform ? `?platform=${encodeURIComponent(platform)}` : "";
     return JeuxVideoApi.fetchJson(
       `/collections/JeuxVideo/add-game-choices${query}`,
-      "Impossible de recuperer les choix du formulaire d'ajout."
+      "Impossible de recuperer les choix du formulaire d'ajout.",
+      {
+        headers: JeuxVideoApi.getAuthorizationHeaders(),
+      }
     );
   }
 }

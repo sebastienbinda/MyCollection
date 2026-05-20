@@ -229,6 +229,36 @@ class AppRoutesTest(unittest.TestCase):
         )
         self.assertEqual(401, response.status_code)
         self.assertIn("invalides", response.get_json()["error"])
+    def test_time_route_requires_authentication(self):
+        """Verifie que le endpoint de test exige un token.
+        Args:
+            Aucun.
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+        response = self.client.get("/api/time")
+        self.assertEqual(403, response.status_code)
+        self.assertIn("Bearer", response.get_json()["error"])
+    def test_routes_route_requires_authentication(self):
+        """Verifie que le catalogue des routes exige un token.
+        Args:
+            Aucun.
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+        response = self.client.get("/api/routes")
+        self.assertEqual(403, response.status_code)
+        self.assertIn("Bearer", response.get_json()["error"])
+    def test_platforms_route_requires_authentication(self):
+        """Verifie que la liste des plateformes exige un token.
+        Args:
+            Aucun.
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+        response = self.client.get("/collections/JeuxVideo/platforms")
+        self.assertEqual(403, response.status_code)
+        self.assertIn("Bearer", response.get_json()["error"])
     def test_platforms_route_returns_platforms(self):
         """Verifie l'endpoint de liste des plateformes.
         Args:
@@ -236,19 +266,22 @@ class AppRoutesTest(unittest.TestCase):
         Returns:
             None: Les assertions valident la reponse HTTP.
         """
-        response = self.client.get("/collections/JeuxVideo/platforms")
+        response = self.client.get(
+            "/collections/JeuxVideo/platforms",
+            headers=self.get_auth_headers(),
+        )
         self.assertEqual(200, response.status_code)
         self.assertEqual(["Switch", "Playstation"], response.get_json()["platforms"])
-    def test_search_route_hides_prices_without_authentication(self):
-        """Verifie que la recherche publique ne retourne pas les prix.
+    def test_search_route_requires_authentication(self):
+        """Verifie que la recherche exige un token.
         Args:
             Aucun.
         Returns:
-            None: Les assertions valident le masquage des prix.
+            None: Les assertions valident la reponse HTTP.
         """
         response = self.client.get("/collections/JeuxVideo/search?platform=Switch")
-        self.assertEqual(200, response.status_code)
-        self.assertNotIn("Prix d'achat", response.get_json()[0])
+        self.assertEqual(403, response.status_code)
+        self.assertIn("Bearer", response.get_json()["error"])
     def test_search_route_keeps_prices_with_authentication(self):
         """Verifie que la recherche authentifiee retourne les prix.
         Args:
@@ -262,58 +295,68 @@ class AppRoutesTest(unittest.TestCase):
         )
         self.assertEqual(200, response.status_code)
         self.assertEqual(45, response.get_json()[0]["Prix d'achat"])
-    def test_game_search_route_hides_prices_without_authentication(self):
-        """Verifie le masquage des prix dans la recherche globale publique.
+    def test_game_search_route_requires_authentication(self):
+        """Verifie que la recherche globale exige un token.
         Args:
             Aucun.
         Returns:
             None: Les assertions valident la reponse HTTP.
         """
         response = self.client.get("/collections/JeuxVideo/game-search?q=mario")
-        data = response.get_json()
-        self.assertEqual(200, response.status_code)
-        self.assertNotIn("Prix d'achat", data["items"][0])
-    def test_home_route_hides_price_statistics_without_authentication(self):
-        """Verifie le masquage des statistiques de prix sur l'accueil public.
+        self.assertEqual(403, response.status_code)
+        self.assertIn("Bearer", response.get_json()["error"])
+    def test_home_route_requires_authentication(self):
+        """Verifie que l'accueil exige un token.
         Args:
             Aucun.
         Returns:
-            None: Les assertions valident les champs masques.
+            None: Les assertions valident la reponse HTTP.
         """
         response = self.client.get("/collections/JeuxVideo/home")
-        data = response.get_json()
-        self.assertEqual(200, response.status_code)
-        self.assertNotIn("total_price", data["totals"])
-        self.assertNotIn("average_price", data["totals"])
-        self.assertNotIn("total_price", data["platforms"][0])
-        self.assertNotIn("average_price", data["platforms"][0])
-    def test_column_values_route_hides_price_values_without_authentication(self):
-        """Verifie que les valeurs de filtre de prix sont masquees sans token.
+        self.assertEqual(403, response.status_code)
+        self.assertIn("Bearer", response.get_json()["error"])
+    def test_home_route_keeps_price_statistics_with_authentication(self):
+        """Verifie que l'accueil authentifie retourne les statistiques de prix.
         Args:
             Aucun.
         Returns:
-            None: Les assertions valident le retrait de la colonne prix.
+            None: Les assertions valident les champs presents.
         """
-        response = self.client.get("/collections/JeuxVideo/column-values?platform=Switch")
+        response = self.client.get(
+            "/collections/JeuxVideo/home",
+            headers=self.get_auth_headers(),
+        )
         data = response.get_json()
         self.assertEqual(200, response.status_code)
-        self.assertNotIn("Prix d'achat", data["values_by_column"])
-    def test_routes_route_lists_public_and_protected_routes(self):
+        self.assertEqual(45, data["totals"]["total_price"])
+        self.assertEqual(45, data["platforms"][0]["average_price"])
+    def test_column_values_route_requires_authentication(self):
+        """Verifie que les valeurs de filtre exigent un token.
+        Args:
+            Aucun.
+        Returns:
+            None: Les assertions valident la reponse HTTP.
+        """
+        response = self.client.get("/collections/JeuxVideo/column-values?platform=Switch")
+        self.assertEqual(403, response.status_code)
+        self.assertIn("Bearer", response.get_json()["error"])
+    def test_routes_route_lists_protected_routes(self):
         """Verifie le catalogue des routes et leurs contraintes d'authentification.
         Args:
             Aucun.
         Returns:
             None: Les assertions valident le contrat de decouverte des routes.
         """
-        response = self.client.get("/api/routes")
+        response = self.client.get("/api/routes", headers=self.get_auth_headers())
         routes = response.get_json()["routes"]
         routes_by_key = {
             (route["path"], tuple(route["methods"])): route
             for route in routes
         }
         self.assertEqual(200, response.status_code)
-        self.assertFalse(routes_by_key[("/api/routes", ("GET",))]["requires_auth"])
-        self.assertFalse(routes_by_key[("/collections/JeuxVideo/platforms", ("GET",))]["requires_auth"])
+        self.assertFalse(routes_by_key[("/auth/token", ("POST",))]["requires_auth"])
+        self.assertTrue(routes_by_key[("/api/routes", ("GET",))]["requires_auth"])
+        self.assertTrue(routes_by_key[("/collections/JeuxVideo/platforms", ("GET",))]["requires_auth"])
         self.assertTrue(routes_by_key[("/collections/JeuxVideo/games", ("POST",))]["requires_auth"])
         self.assertTrue(
             routes_by_key[("/collections/JeuxVideo/wishlist/games", ("POST",))]["requires_auth"]
@@ -342,7 +385,10 @@ class AppRoutesTest(unittest.TestCase):
         Returns:
             None: Les assertions valident la reponse HTTP.
         """
-        response = self.client.get("/collections/JeuxVideo/add-game-choices?platform=Switch")
+        response = self.client.get(
+            "/collections/JeuxVideo/add-game-choices?platform=Switch",
+            headers=self.get_auth_headers(),
+        )
         data = response.get_json()
         self.assertEqual(200, response.status_code)
         self.assertEqual(["Switch", "Xbox"], data["platforms"])
@@ -354,7 +400,7 @@ class AppRoutesTest(unittest.TestCase):
             None: Les assertions valident la reponse HTTP.
         """
         response = self.client.post("/collections/JeuxVideo/cache/reset")
-        self.assertEqual(401, response.status_code)
+        self.assertEqual(403, response.status_code)
         self.assertIn("Bearer", response.get_json()["error"])
     def test_ods_download_route_returns_attachment(self):
         """Verifie l'endpoint de telechargement du fichier ODS.
@@ -378,7 +424,7 @@ class AppRoutesTest(unittest.TestCase):
             None: Les assertions valident la reponse HTTP.
         """
         response = self.client.get("/collections/JeuxVideo/ods/download")
-        self.assertEqual(401, response.status_code)
+        self.assertEqual(403, response.status_code)
     def test_add_game_route_returns_created_item(self):
         """Verifie l'endpoint d'ajout d'un jeu.
         Args:

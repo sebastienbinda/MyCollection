@@ -14,13 +14,15 @@
 from functools import wraps
 from typing import Callable
 
-from flask import jsonify, request
+from flask import Flask, jsonify, request
 
 from .auth_token_service import AuthTokenService
 
 
 class AuthGuard:
     """Applique la validation Bearer OAuth2 aux endpoints Flask proteges."""
+
+    EXEMPT_METHODS = {"OPTIONS"}
 
     def __init__(self, token_service: AuthTokenService):
         """Initialise le garde d'authentification.
@@ -33,6 +35,35 @@ class AuthGuard:
         """
 
         self.token_service = token_service
+
+    def protect_all_routes(self, flask_app: Flask, exempt_endpoints: set[str] | None = None) -> None:
+        """Protege globalement les endpoints Flask avec un token Bearer.
+
+        Args:
+            flask_app (Flask): Application Flask dont les routes doivent etre protegees.
+            exempt_endpoints (set[str] | None): Noms d'endpoints Flask a laisser publics.
+
+        Returns:
+            None: Enregistre un controle avant requete et marque les routes protegees.
+        """
+
+        exempt_endpoint_names = exempt_endpoints or set()
+        self._mark_protected_routes(flask_app, exempt_endpoint_names)
+
+        @flask_app.before_request
+        def require_token_before_request():
+            """Valide le token Bearer avant chaque route non exemptee.
+
+            Args:
+                Aucun.
+
+            Returns:
+                None | tuple: `None` si la requete est autorisee, sinon une erreur JSON.
+            """
+
+            if self._is_request_exempt(exempt_endpoint_names):
+                return None
+            return self.validate_current_request()
 
     def require_token(self, route_handler: Callable) -> Callable:
         """Retourne un decorateur qui exige un token Bearer valide.
@@ -56,18 +87,64 @@ class AuthGuard:
                 Any: Reponse de la route originale ou erreur JSON 401.
             """
 
-            token = self._extract_bearer_token()
-            if not token:
-                return self._unauthorized_response("Token Bearer manquant.")
-
-            try:
-                self.token_service.validate_access_token(token)
-            except ValueError as exc:
-                return self._unauthorized_response(str(exc))
+            validation_error = self.validate_current_request()
+            if validation_error:
+                return validation_error
             return route_handler(*args, **kwargs)
 
         wrapped_route.requires_auth = True
         return wrapped_route
+
+    def validate_current_request(self):
+        """Valide le header `Authorization` de la requete Flask courante.
+
+        Args:
+            Aucun.
+
+        Returns:
+            None | tuple: `None` si le token est valide, sinon une reponse d'erreur JSON.
+        """
+
+        token = self._extract_bearer_token()
+        if not token:
+            return self._forbidden_response("Token Bearer manquant.")
+
+        try:
+            self.token_service.validate_access_token(token)
+        except ValueError as exc:
+            return self._unauthorized_response(str(exc))
+        return None
+
+    def _mark_protected_routes(self, flask_app: Flask, exempt_endpoints: set[str]) -> None:
+        """Marque les vues Flask protegees pour la decouverte des routes.
+
+        Args:
+            flask_app (Flask): Application Flask a inspecter.
+            exempt_endpoints (set[str]): Endpoints a laisser sans marque d'authentification.
+
+        Returns:
+            None: Modifie les attributs des fonctions de vue.
+        """
+
+        for endpoint_name, route_handler in flask_app.view_functions.items():
+            if endpoint_name == "static" or endpoint_name in exempt_endpoints:
+                continue
+            route_handler.requires_auth = True
+
+    def _is_request_exempt(self, exempt_endpoints: set[str]) -> bool:
+        """Indique si la requete courante doit eviter le controle global.
+
+        Args:
+            exempt_endpoints (set[str]): Endpoints Flask autorises sans token.
+
+        Returns:
+            bool: `True` pour les preflight CORS, les fichiers statiques ou les endpoints publics.
+        """
+
+        if request.method in self.EXEMPT_METHODS:
+            return True
+        endpoint_name = request.endpoint or ""
+        return endpoint_name == "static" or endpoint_name in exempt_endpoints
 
     def _extract_bearer_token(self) -> str:
         """Extrait le token Bearer depuis l'en-tete HTTP.
@@ -100,3 +177,15 @@ class AuthGuard:
             401,
             {"WWW-Authenticate": 'Bearer realm="CloudCollectionApp"'},
         )
+
+    def _forbidden_response(self, message: str):
+        """Construit une reponse HTTP 403 pour les requetes sans token.
+
+        Args:
+            message (str): Message d'erreur a retourner au client.
+
+        Returns:
+            tuple[flask.Response, int]: Reponse JSON 403.
+        """
+
+        return jsonify({"error": message}), 403

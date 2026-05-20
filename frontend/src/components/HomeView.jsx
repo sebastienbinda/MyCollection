@@ -1,5 +1,5 @@
 import { formatCellValue, formatCurrency, formatNumber } from "../collectionUtils";
-import AuthStatusMenu from "./AuthStatusMenu";
+import MainMenu from "./MainMenu";
 import ProgressBar from "./ProgressBar";
 import ProjectIcon from "./ProjectIcon";
 
@@ -22,6 +22,8 @@ function HomeView({
   homeSearchError,
   isAuthenticated,
   authenticatedUsername,
+  onOpenAbout,
+  onOpenHome,
   onOpenAdminDashboard,
   onLogout,
   onOpenWishlist,
@@ -39,35 +41,18 @@ function HomeView({
   return (
     <main className="appShell">
       <header className="pageHeader">
-        <div className="pageHeaderTopActions">
-          <details className="pageHeaderOptionsMenu">
-            <summary aria-label="Ouvrir le menu des options">
-              <svg aria-hidden="true" className="pageHeaderOptionsIcon" viewBox="0 0 24 24">
-                <path d="M4 7h16v2H4V7Zm0 4h16v2H4v-2Zm0 4h16v2H4v-2Z" />
-              </svg>
-              <span>Menu</span>
-            </summary>
-            <div className="pageHeaderActions">
-              <button className="secondaryButton" type="button" onClick={onOpenWishlist}>
-                Liste de souhaits
-              </button>
-              <button
-                className="secondaryButton"
-                type="button"
-                onClick={() => onOpenPlatform(selectedPlatform || platforms[0] || "")}
-                disabled={platforms.length === 0}
-              >
-                Voir les jeux
-              </button>
-            </div>
-          </details>
-          {AuthStatusMenu.render({
-            isAuthenticated,
-            username: authenticatedUsername,
-            onOpenAdminDashboard,
-            onLogout,
-          })}
-        </div>
+        <MainMenu
+          isAuthenticated={isAuthenticated}
+          username={authenticatedUsername}
+          platforms={platforms}
+          selectedPlatform={selectedPlatform}
+          onOpenAbout={onOpenAbout}
+          onOpenHome={onOpenHome}
+          onOpenWishlist={onOpenWishlist}
+          onOpenPlatform={onOpenPlatform}
+          onOpenAdminDashboard={onOpenAdminDashboard}
+          onLogout={onLogout}
+        />
         <div>
           <p className="eyebrow">Collection personnelle</p>
           <h1>

@@ -510,6 +510,11 @@ def list_jeux_video_add_game_choices():
         return jsonify({"error": str(exc)}), 400
     except Exception as exc:
         return jsonify({"error": f"Unable to read ODS choices: {exc}"}), 500
+
+
+auth_guard.protect_all_routes(app, exempt_endpoints={"issue_auth_token"})
+
+
 if __name__ == "__main__":
     backend_port = int(os.getenv("BACKEND_PORT", "7777"))
     app.run(debug=True, host="0.0.0.0", port=backend_port)
