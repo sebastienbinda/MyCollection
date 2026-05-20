@@ -34,6 +34,11 @@ Backend tests run with a configured ODS path. When `JEUXVIDEO_ODS_PATH` is not
 already defined, `./test_backend.sh` points it to the versioned
 `collection-example.ods` fixture.
 
+The workflow sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so GitHub-provided
+JavaScript actions run on Node.js 24. This is independent from the frontend
+application build, which uses the Node.js version configured in
+`actions/setup-node`.
+
 ## Docker Version
 
 Docker image versions are resolved from the Git tag that triggered the workflow.
