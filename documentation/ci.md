@@ -31,6 +31,10 @@ The GitHub Actions workflow contains three jobs:
 The `docker-images` job depends on both validation jobs. Docker images must not
 be pushed if tests or frontend build fail.
 
+Backend tests run with a configured ODS path. When `JEUXVIDEO_ODS_PATH` is not
+already defined, `./test_backend.sh` points it to the versioned
+`collection-example.ods` fixture.
+
 ## Docker Version
 
 The version file is `docker/version`.
@@ -46,8 +50,12 @@ On each push to `main`:
 - If `docker/version` changed compared with the previous commit on `main`, the
   workflow uses the new version as-is.
 - If `docker/version` did not change, the workflow increments the patch number
-  `z`, commits the updated file with `[skip ci]`, and uses the incremented
-  version for the Docker image tags.
+  `z` and uses the incremented version for the Docker image tags.
+
+The automatic version bump is committed back to `main` only after backend tests,
+frontend build, and Docker image build/publish steps have succeeded. If any
+validation or Docker publication step fails, `docker/version` is not updated on
+the branch.
 
 The `[skip ci]` marker avoids triggering a second full workflow run for the
 automatic version bump commit.
@@ -73,8 +81,8 @@ The workflow requires:
 
 Repository settings and branch protection rules must allow the GitHub Actions
 token to push the automatic version bump commit to `main`. If branch protection
-blocks this push, the workflow can still validate the code but the version bump
-step will fail before image publication.
+blocks this push, tests and image publication may already have succeeded, but
+the final version bump commit step will fail.
 
 ## Development Rules
 

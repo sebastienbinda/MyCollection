@@ -22,7 +22,7 @@ from services.ods import OdsPathResolver
 
 
 class OdsPathResolverTest(unittest.TestCase):
-    """Valide la resolution du fichier collection.ods du projet."""
+    """Valide la resolution configurable du fichier ODS."""
 
     def test_resolve_returns_explicit_path_first(self):
         """Verifie que le chemin explicite est prioritaire.
@@ -36,8 +36,8 @@ class OdsPathResolverTest(unittest.TestCase):
 
         self.assertEqual("/tmp/custom.ods", OdsPathResolver("/tmp/custom.ods").resolve())
 
-    def test_resolve_returns_environment_path_before_default(self):
-        """Verifie que la variable d'environnement reste prioritaire.
+    def test_resolve_returns_environment_path(self):
+        """Verifie que la variable d'environnement configure le chemin ODS.
 
         Args:
             Aucun.
@@ -59,20 +59,20 @@ class OdsPathResolverTest(unittest.TestCase):
                 else:
                     os.environ["JEUXVIDEO_ODS_PATH"] = previous_path
 
-    def test_resolve_returns_project_collection_by_default(self):
-        """Verifie que collection.ods du projet est le chemin par defaut.
+    def test_resolve_raises_without_configured_path(self):
+        """Verifie que le resolver exige une configuration explicite.
 
         Args:
             Aucun.
 
         Returns:
-            None: Les assertions valident le chemin resolu.
+            None: Les assertions valident l'erreur de configuration.
         """
 
         previous_path = os.environ.pop("JEUXVIDEO_ODS_PATH", None)
         try:
-            expected_path = str(Path(__file__).resolve().parents[2] / "collection.ods")
-            self.assertEqual(expected_path, OdsPathResolver().resolve())
+            with self.assertRaises(FileNotFoundError):
+                OdsPathResolver().resolve()
         finally:
             if previous_path is not None:
                 os.environ["JEUXVIDEO_ODS_PATH"] = previous_path

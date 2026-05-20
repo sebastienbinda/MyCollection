@@ -48,9 +48,11 @@ L'objectif est de garder le fichier ODS comme source de verite tout en offrant u
 - Validation backend des champs avant ajout ou modification
 - Modification et suppression des jeux de collection ou de liste de souhaits
 - Tableau de bord administrateur avec telechargement ODS et reinitialisation du cache
-- Authentification Bearer pour les actions qui modifient les donnees
+- Page About publique pour les visiteurs non connectes
+- Authentification Bearer pour toutes les routes backend sauf `POST /auth/token`
 - Barres de progression pendant les chargements et actions longues
 - Ecriture backend dans le fichier ODS avec sauvegarde automatique avant modification
+- Pipeline GitHub Actions avec tests, build frontend et publication des images Docker
 
 ## Architecture Technique
 
@@ -116,6 +118,7 @@ Fichiers principaux :
 
 L'application gere les vues principales suivantes :
 
+- about publique
 - accueil
 - detail d'une plateforme
 - liste de souhaits
@@ -125,18 +128,25 @@ L'application gere les vues principales suivantes :
 
 La navigation reste volontairement simple et utilise l'URL :
 
-- `/` : accueil
-- `/?platform=Playstation%204` : vue d'une plateforme
-- `/wishlist` : liste de souhaits
+- `/` : redirection fonctionnelle vers `/about` sans token et `/accueil` avec token
+- `/about` : page publique non connectee
+- `/accueil` : accueil authentifie
+- `/?platform=Playstation%204` : vue d'une plateforme authentifiee
+- `/wishlist` : liste de souhaits authentifiee
 - `/add-game` : formulaire d'ajout
 - `/auth` : authentification
 - `/admin-dashboard` : administration
 
+Sans token local, les pages applicatives hors `/about` et `/auth` redirigent vers
+la page About.
+
 ## Fichier ODS
 
-Par defaut, le backend cherche le fichier :
+Le backend ne depend d'aucun fichier ODS code en dur. Le chemin du fichier doit
+etre fourni par configuration :
 
-- `collection.ods` a la racine du projet
+- `JEUXVIDEO_ODS_PATH` pour le backend lance directement
+- `JEUXVIDEO_ODS_FILE` pour le montage Docker Compose
 
 Un fichier exemple versionnable est fourni :
 
@@ -178,7 +188,8 @@ Les images affichees dans l'interface sont extraites directement des images emba
 
 ### Authentification
 
-Les endpoints qui modifient les donnees exigent un token Bearer OAuth2 :
+Tous les endpoints backend applicatifs exigent un token Bearer OAuth2, sauf la
+route publique `POST /auth/token` :
 
 ```http
 POST /auth/token
@@ -214,8 +225,8 @@ d'authentification. Docker PostgreSQL utilise `POSTGRES_PASSWORD` en clair au
 demarrage de la base ; `POSTGRES_PASSWORD_ENCRYPTED` conserve la version
 chiffree du meme secret.
 
-La reponse contient `access_token`, `token_type` et `expires_in`. Les appels de
-mise a jour doivent ensuite envoyer :
+La reponse contient `access_token`, `token_type` et `expires_in`. Tous les
+appels aux routes protegees doivent ensuite envoyer :
 
 ```http
 Authorization: Bearer <access_token>
@@ -246,8 +257,8 @@ Routes principales :
 | `POST` | `/collections/JeuxVideo/cache/reset` | Vide le cache ODS |
 | `GET` | `/collections/JeuxVideo/ods/download` | Telecharge le fichier ODS |
 
-Les routes `POST`, `PUT`, `DELETE`, `cache/reset` et `ods/download` exigent
-`Authorization: Bearer <access_token>`. Les choix du formulaire d'ajout sont
+Toutes les routes du tableau exigent `Authorization: Bearer <access_token>`.
+Seule `POST /auth/token` est publique. Les choix du formulaire d'ajout sont
 fusionnes cote backend entre collection et liste de souhaits, dedoublonnes en
 ignorant casse et espaces, nettoyes des valeurs invalides comme `nan`, puis
 tries alphabetiquement.
@@ -400,6 +411,13 @@ Le script `./test_backend.sh` utilise aussi Python 3.12 et recree automatiquemen
 
 Le backend tourne sur `http://localhost:7777`.
 
+Le backend lance hors Docker doit recevoir `JEUXVIDEO_ODS_PATH` si le fichier
+ODS n'est pas configure par ailleurs :
+
+```bash
+JEUXVIDEO_ODS_PATH=../collection-example.ods BACKEND_PORT=7777 python app.py
+```
+
 ### Frontend
 
 Dans un autre terminal :
@@ -449,7 +467,8 @@ Lancer les tests backend depuis la racine :
 
 Le script verifie Python 3.12, cree ou recree `backend/.venv` si necessaire,
 installe les dependances quand `requirements.txt` change, puis lance
-`unittest`.
+`unittest`. Si `JEUXVIDEO_ODS_PATH` n'est pas deja defini, le script utilise la
+fixture versionnee `collection-example.ods`.
 
 Le frontend peut etre valide par :
 
@@ -457,6 +476,42 @@ Le frontend peut etre valide par :
 cd frontend
 npm run build
 ```
+
+## CI Et Images Docker
+
+Le projet contient un pipeline GitHub Actions dans :
+
+```text
+.github/workflows/ci.yml
+```
+
+Il se declenche sur chaque `push` vers `main` et execute :
+
+- les tests backend avec `./test_backend.sh`
+- le build frontend avec `npm ci` puis `npm run build`
+- le build et la publication des images Docker backend et frontend
+
+Les images sont publiees sur GitHub Container Registry :
+
+```text
+ghcr.io/sebastienbinda/cloudcollectionapp/backend:<version>
+ghcr.io/sebastienbinda/cloudcollectionapp/backend:latest
+ghcr.io/sebastienbinda/cloudcollectionapp/frontend:<version>
+ghcr.io/sebastienbinda/cloudcollectionapp/frontend:latest
+```
+
+La version vient du fichier :
+
+```text
+docker/version
+```
+
+Si `docker/version` n'a pas change depuis le commit precedent sur `main`, le
+pipeline incremente automatiquement le patch `z` de `x.y.z`. Ce commit de
+version n'est pousse sur `main` qu'apres reussite des tests, du build frontend
+et de la publication des images Docker.
+
+Voir aussi `documentation/ci.md`.
 
 ## Notes De Maintenance
 
@@ -466,3 +521,13 @@ npm run build
 - L'ajout de jeu modifie le fichier ODS sur disque : verifier la sauvegarde si une modification doit etre annulee.
 - Les sauvegardes ODS sont creees avant les ajouts, modifications et suppressions.
 - Si la structure du fichier ODS change fortement, il faudra adapter les services `backend/services/ods/` et `JeuVideoService`.
+
+## Documentation Fonctionnelle
+
+Les documents fonctionnels a maintenir sont dans `documentation/` :
+
+- `documentation/authentication.md` : authentification, routes protegees et session frontend
+- `documentation/site-plan.md` : redirection des pages sans session
+- `documentation/about.md` : page About publique
+- `documentation/menu.md` : menu principal
+- `documentation/ci.md` : pipeline CI, version Docker et publication des images

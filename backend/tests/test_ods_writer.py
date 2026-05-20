@@ -270,7 +270,7 @@ class OdsWriterTest(unittest.TestCase):
             None: Les assertions valident que le fichier original est restaure.
         """
         with TemporaryDirectory() as directory:
-            ods_path = f"{directory}/collection.ods"
+            ods_path = f"{directory}/test.ods"
             original_content = self._build_sheet_content()
             self._write_ods_file(ods_path, original_content)
             writer = OdsWriter(
@@ -291,7 +291,7 @@ class OdsWriterTest(unittest.TestCase):
             None: Les assertions valident que le fichier original est restaure.
         """
         with TemporaryDirectory() as directory:
-            ods_path = f"{directory}/collection.ods"
+            ods_path = f"{directory}/test.ods"
             original_content = self._build_sheet_content()
             self._write_ods_file(ods_path, original_content)
             writer = OdsWriter(
@@ -313,7 +313,7 @@ class OdsWriterTest(unittest.TestCase):
             None: Les assertions valident les chemins de travail configures.
         """
         with TemporaryDirectory() as directory:
-            ods_path = f"{directory}/collection.ods"
+            ods_path = f"{directory}/test.ods"
             tmp_dir = f"{directory}/tmp"
             backup_dir = f"{directory}/backup"
             original_content = self._build_sheet_content()
@@ -339,7 +339,7 @@ class OdsWriterTest(unittest.TestCase):
             self.assertEqual([], os.listdir(tmp_dir))
             backups = os.listdir(backup_dir)
             self.assertEqual(1, len(backups))
-            self.assertTrue(backups[0].startswith("collection.ods.backup-"))
+            self.assertTrue(backups[0].startswith("test.ods.backup-"))
     def test_add_wishlist_game_writes_next_available_row(self):
         """Verifie l'ajout d'un jeu dans la liste de souhaits.
         Args:
@@ -348,7 +348,7 @@ class OdsWriterTest(unittest.TestCase):
             None: Les assertions valident l'ecriture de la ligne wishlist.
         """
         with TemporaryDirectory() as directory:
-            ods_path = f"{directory}/collection.ods"
+            ods_path = f"{directory}/test.ods"
             original_content = self._build_wishlist_content()
             self._write_ods_file(ods_path, original_content)
             writer = OdsWriter(

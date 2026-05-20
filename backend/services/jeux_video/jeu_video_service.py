@@ -35,7 +35,7 @@ class JeuVideoService:
 
         Args:
             ods_path (Optional[str]): Chemin explicite vers le fichier ODS. Si absent,
-                le chemin est resolu depuis `JEUXVIDEO_ODS_PATH` ou les emplacements par defaut.
+                le chemin est resolu depuis `JEUXVIDEO_ODS_PATH`.
 
         Returns:
             None: Le constructeur ne retourne aucune valeur.

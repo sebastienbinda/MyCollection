@@ -80,20 +80,17 @@ jobs:
           fi
 
           resolved_version="${current_version}"
+          auto_bumped="false"
           if [[ -n "${previous_version}" && "${current_version}" == "${previous_version}" ]]; then
             IFS="." read -r major minor patch <<< "${current_version}"
             resolved_version="${major}.${minor}.$((patch + 1))"
             printf '%s\n' "${resolved_version}" > docker/version
-
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add docker/version
-            git commit -m "ci: bump docker image version to ${resolved_version} [skip ci]"
-            git push origin HEAD:main
+            auto_bumped="true"
           fi
 
           repository="$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')"
           echo "version=${resolved_version}" >> "${GITHUB_OUTPUT}"
+          echo "auto_bumped=${auto_bumped}" >> "${GITHUB_OUTPUT}"
           echo "backend_image=${REGISTRY}/${repository}/backend" >> "${GITHUB_OUTPUT}"
           echo "frontend_image=${REGISTRY}/${repository}/frontend" >> "${GITHUB_OUTPUT}"
 
@@ -126,3 +123,15 @@ jobs:
           tags: |
             ${{ steps.version.outputs.frontend_image }}:${{ steps.version.outputs.version }}
             ${{ steps.version.outputs.frontend_image }}:latest
+
+      - name: Commit automatic Docker version bump
+        if: steps.version.outputs.auto_bumped == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docker/version
+          git commit -m "ci: bump docker image version to ${{ steps.version.outputs.version }} [skip ci]"
+          git push origin HEAD:main
