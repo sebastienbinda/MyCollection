@@ -485,11 +485,12 @@ Le projet contient un pipeline GitHub Actions dans :
 .github/workflows/ci.yml
 ```
 
-Il se declenche sur chaque `push` vers `main` et execute :
+Il execute les validations sur chaque `push` vers `main` et sur chaque tag Git :
 
 - les tests backend avec `./test_backend.sh`
 - le build frontend avec `npm ci` puis `npm run build`
-- le build et la publication des images Docker backend et frontend
+- le build et la publication des images Docker backend et frontend uniquement
+  pour les tags `X.Y.Z`
 
 Les images sont publiees sur GitHub Container Registry :
 
@@ -500,16 +501,16 @@ ghcr.io/sebastienbinda/cloudcollectionapp/frontend:<version>
 ghcr.io/sebastienbinda/cloudcollectionapp/frontend:latest
 ```
 
-La version vient du fichier :
+La version vient du tag Git qui declenche le workflow. Pour publier une version :
 
-```text
-docker/version
+```bash
+git tag 0.2.1
+git push origin 0.2.1
 ```
 
-Si `docker/version` n'a pas change depuis le commit precedent sur `main`, le
-pipeline incremente automatiquement le patch `z` de `x.y.z`. Ce commit de
-version n'est pousse sur `main` qu'apres reussite des tests, du build frontend
-et de la publication des images Docker.
+Les images Docker ne sont pas publiees depuis les pushes de branche. Elles sont
+publiees uniquement depuis un tag `X.Y.Z`, et ce tag devient la version des
+images. Un tag ne respectant pas ce format echoue avant publication.
 
 Voir aussi `documentation/ci.md`.
 

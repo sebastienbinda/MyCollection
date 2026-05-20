@@ -4,19 +4,17 @@
 
 - Continuous integration is handled by GitHub Actions.
 - The workflow file is `.github/workflows/ci.yml`.
-- The workflow runs on every push to the `main` branch.
-- Backend tests and the frontend production build must pass before Docker images
-  are published.
-- Docker image versions come from `docker/version`.
+- Backend tests and the frontend production build run on every push to `main`
+  and on every pushed Git tag.
+- Docker images are published only when a Git tag matching `X.Y.Z` is pushed.
+- Docker image versions come from the Git tag.
 - Published images are pushed to GitHub Container Registry.
 
 ## Objective
 
-The CI pipeline validates the application after each push to `main` and
-publishes Docker images that can be reused for deployment. It keeps the image
-version explicit through `docker/version` while allowing the patch version to be
-automatically incremented when the pushed commit did not change the version
-file.
+The CI pipeline validates the main branch and tagged releases. Docker images are
+published only for release tags, and the release version is explicit: it is the
+pushed Git tag in `X.Y.Z` format.
 
 ## Workflow
 
@@ -25,11 +23,12 @@ The GitHub Actions workflow contains three jobs:
 - `backend-tests`: runs `./test_backend.sh`.
 - `frontend-build`: installs frontend dependencies with `npm ci` and runs
   `npm run build`.
-- `docker-images`: builds and pushes the backend and frontend Docker images
-  after the validation jobs succeed.
+- `docker-images`: for Git tags only, builds and pushes the backend and frontend
+  Docker images after the validation jobs succeed.
 
 The `docker-images` job depends on both validation jobs. Docker images must not
-be pushed if tests or frontend build fail.
+be pushed if tests or frontend build fail. Branch pushes never publish Docker
+images.
 
 Backend tests run with a configured ODS path. When `JEUXVIDEO_ODS_PATH` is not
 already defined, `./test_backend.sh` points it to the versioned
@@ -37,28 +36,22 @@ already defined, `./test_backend.sh` points it to the versioned
 
 ## Docker Version
 
-The version file is `docker/version`.
+Docker image versions are resolved from the Git tag that triggered the workflow.
 
-The file must contain a semantic version in the `x.y.z` format, for example:
+The tag must match the `X.Y.Z` format, for example:
 
 ```text
 0.2.0
 ```
 
-On each push to `main`:
+Docker images are not published from branch pushes. Tags that do not match
+`X.Y.Z` fail before image publication. To publish a release, create and push a
+version tag:
 
-- If `docker/version` changed compared with the previous commit on `main`, the
-  workflow uses the new version as-is.
-- If `docker/version` did not change, the workflow increments the patch number
-  `z` and uses the incremented version for the Docker image tags.
-
-The automatic version bump is committed back to `main` only after backend tests,
-frontend build, and Docker image build/publish steps have succeeded. If any
-validation or Docker publication step fails, `docker/version` is not updated on
-the branch.
-
-The `[skip ci]` marker avoids triggering a second full workflow run for the
-automatic version bump commit.
+```bash
+git tag 0.2.1
+git push origin 0.2.1
+```
 
 ## Published Images
 
@@ -69,30 +62,21 @@ The images are published to GitHub Container Registry:
 - `ghcr.io/sebastienbinda/cloudcollectionapp/frontend:<version>`
 - `ghcr.io/sebastienbinda/cloudcollectionapp/frontend:latest`
 
-The `<version>` tag is the resolved version from `docker/version`, after any
-automatic patch increment.
+The `<version>` tag is the Git tag that triggered the workflow.
 
 ## Required GitHub Permissions
 
 The workflow requires:
 
-- `contents: write` to commit the automatic `docker/version` patch increment.
+- `contents: read` to checkout the tagged source.
 - `packages: write` to publish images to GitHub Container Registry.
-
-Repository settings and branch protection rules must allow the GitHub Actions
-token to push the automatic version bump commit to `main`. If branch protection
-blocks this push, tests and image publication may already have succeeded, but
-the final version bump commit step will fail.
 
 ## Development Rules
 
 - Do not publish Docker images before backend tests and frontend build have
   passed.
-- Keep `docker/version` in semantic version format.
-- Update `docker/version` manually when intentionally changing the major or
-  minor version.
-- Let the workflow increment the patch version automatically for ordinary pushes
-  where the version file did not change.
+- Publish Docker images only from Git tags matching `X.Y.Z`.
+- Use the release tag as the Docker image version.
 - Do not hardcode registry credentials in the repository. Use GitHub Actions
   token permissions or repository secrets.
 - If image names, registry location, trigger branches, or versioning behavior
