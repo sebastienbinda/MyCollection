@@ -5,15 +5,19 @@
 #  \____|_|\___/ \__,_|\__,_|\____\___/|_|_|\___|\___|\__|_|\___/|_| |_|\___/| .__/| .__/
 #                                                                            |_|   |_|
 # Projet : CloudCollectionApp
-# Date de creation : 2026-05-03
-# Auteurs : Codex et Binda Sébastien
+# Date de creation : 2026-05-13
+# Auteurs : OpenAI ChatGPT, Codex, Binda Sébastien
+# Licence : Apache 2.0
 #
-Flask
-Flask-Cors
-SQLAlchemy
-alembic
-cryptography
-gunicorn
-pandas
-odfpy
-psycopg[binary]
+"""Exports publics des services email."""
+
+from .email_configuration import EmailConfiguration
+from .email_sender import ConsoleEmailSender, EmailSender, EmailSenderFactory, SmtpEmailSender
+
+__all__ = [
+    "ConsoleEmailSender",
+    "EmailConfiguration",
+    "EmailSender",
+    "EmailSenderFactory",
+    "SmtpEmailSender",
+]

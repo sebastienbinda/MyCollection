@@ -49,7 +49,8 @@ L'objectif est de garder le fichier ODS comme source de verite tout en offrant u
 - Modification et suppression des jeux de collection ou de liste de souhaits
 - Tableau de bord administrateur avec telechargement ODS et reinitialisation du cache
 - Page About publique pour les visiteurs non connectes
-- Authentification Bearer pour toutes les routes backend sauf `POST /auth/token`
+- Creation de compte depuis la page d'authentification avec validation email
+- Authentification Bearer pour toutes les routes backend hors authentification et inscription publiques
 - Barres de progression pendant les chargements et actions longues
 - Ecriture backend dans le fichier ODS avec sauvegarde automatique avant modification
 - Pipeline GitHub Actions avec tests, build frontend et publication des images Docker
@@ -76,16 +77,17 @@ Technologies :
 
 Fichiers principaux :
 
-- `backend/app.py` : routes HTTP Flask
-- `backend/services/jeux_video/jeu_video_service.py` : orchestration de la collection jeux video
-- `backend/services/jeux_video/add_game_choice_service.py` : fusion et tri des choix du formulaire d'ajout
+- `backend/app.py` : assemblage Flask, routes de collection et protection globale
+- `backend/controllers/` : controleurs HTTP transverses, dont authentification et inscription
+- `backend/services/games/games_service.py` : orchestration de la collection jeux video
+- `backend/services/games/add_game_choice_service.py` : fusion et tri des choix du formulaire d'ajout
 - `backend/services/ods/` : lecture, ecriture, sauvegarde et validation du fichier ODS
 - `backend/services/auth/` : emission et validation des tokens Bearer
 - `backend/services/validation/` : validation des payloads collection et liste de souhaits
 - `backend/models/jeu_video.py` : normalisation des lignes de jeux video
 - `backend/models/collection_types.py` : types de collections supportes
 
-Le service `JeuVideoService` lit les donnees dans le fichier ODS. Pour les
+Le service `GamesService` lit les donnees dans le fichier ODS. Pour les
 onglets de plateformes, les colonnes de jeux sont lues dans la plage logique
 `F:M`, avec la ligne d'en-tete a l'index 5.
 
@@ -188,8 +190,8 @@ Les images affichees dans l'interface sont extraites directement des images emba
 
 ### Authentification
 
-Tous les endpoints backend applicatifs exigent un token Bearer OAuth2, sauf la
-route publique `POST /auth/token` :
+Tous les endpoints backend applicatifs exigent un token Bearer OAuth2, sauf les
+routes publiques d'authentification et d'inscription :
 
 ```http
 POST /auth/token
@@ -232,6 +234,57 @@ appels aux routes protegees doivent ensuite envoyer :
 Authorization: Bearer <access_token>
 ```
 
+### Inscription utilisateur
+
+`POST /api/auth/register` cree un utilisateur avec un mot de passe stocke sous
+forme d'empreinte non reversible et une adresse email non validee.
+Cette route et la validation email sont publiques, car l'utilisateur n'a pas
+encore de compte valide et ne peut pas encore posseder de token Bearer.
+
+Exemple :
+
+```json
+{
+  "email": "user@example.com",
+  "password": "VeryStrongPassword123!"
+}
+```
+
+Le backend genere un token de validation email, stocke uniquement son empreinte
+SHA-256 en base, puis envoie un lien vers :
+
+```http
+GET /api/auth/verify-email?token=<token>
+```
+
+Variables utiles :
+
+```bash
+export BACKEND_PUBLIC_URL=https://api.example.com
+export EMAIL_DELIVERY_MODE=smtp
+export EMAIL_VERIFICATION_TOKEN_TTL_HOURS=24
+export SMTP_FROM_EMAIL=noreply@example.com
+export SMTP_HOST=smtp.example.com
+export SMTP_PORT=587
+export SMTP_USERNAME=...
+export SMTP_PASSWORD=...
+export SMTP_USE_TLS=true
+```
+
+En developpement, `EMAIL_DELIVERY_MODE=console` journalise l'email genere.
+
+Tester l'envoi avec le conteneur backend deja demarre :
+
+```bash
+./test_email.sh --to destinataire@example.com
+```
+
+Pour tester la stack de production :
+
+```bash
+./test_email.sh -p --to destinataire@example.com
+```
+
 ### Routes Disponibles
 
 `GET /api/routes` retourne les routes backend et indique celles qui sont
@@ -258,10 +311,11 @@ Routes principales :
 | `GET` | `/collections/JeuxVideo/ods/download` | Telecharge le fichier ODS |
 
 Toutes les routes du tableau exigent `Authorization: Bearer <access_token>`.
-Seule `POST /auth/token` est publique. Les choix du formulaire d'ajout sont
-fusionnes cote backend entre collection et liste de souhaits, dedoublonnes en
-ignorant casse et espaces, nettoyes des valeurs invalides comme `nan`, puis
-tries alphabetiquement.
+Les routes publiques sont `POST /auth/token`, `POST /api/auth/register`,
+`GET /api/auth/verify-email` et `POST /api/auth/verify-email`. Les choix du
+formulaire d'ajout sont fusionnes cote backend entre collection et liste de
+souhaits, dedoublonnes en ignorant casse et espaces, nettoyes des valeurs
+invalides comme `nan`, puis tries alphabetiquement.
 
 Le formulaire `/add-game` reutilise la meme page pour ajouter vers la collection
 ou vers la liste de souhaits. En mode liste de souhaits, le champ plateforme est
@@ -287,7 +341,15 @@ Le projet peut tourner avec trois conteneurs :
 Seul le fichier ODS defini par `JEUXVIDEO_ODS_FILE` est monte dans le conteneur backend, sans monter tout son dossier parent.
 Les fichiers temporaires sont ecrits dans un `tmpfs` conteneur sur `/project/tmp`.
 Les sauvegardes sont ecrites dans le repertoire monte `JEUXVIDEO_BACKUP_DIR`, disponible dans le conteneur sur `/project/backup`.
+Les logs backend sont ecrits sur la sortie standard Docker et, si active,
+dans le repertoire hote `BACKEND_LOG_HOST_DIR`, monte dans le conteneur sur
+`/app/logs`. Le fichier actif tourne au changement de jour ou lorsque sa taille
+depasse `BACKEND_LOG_FILE_MAX_BYTES`; `BACKEND_LOG_FILE_BACKUP_COUNT` limite le
+nombre d'archives conservees.
 PostgreSQL n'expose aucun port vers l'hote. Le backend recoit `DATABASE_URL` avec l'hote Docker interne `database`.
+Au demarrage, le backend cree le schema PostgreSQL configure par `DB_SCHEMA_NAME`
+s'il n'existe pas, applique les migrations Alembic, puis inscrit `APP_VERSION`
+et la date de creation conservee dans `t_schema_version`.
 Dans `docker/.env`, la valeur locale pointe vers `../collection.ods`.
 Dans `docker/.env.example`, la valeur versionnable pointe vers `../collection-example.ods`.
 
@@ -299,11 +361,26 @@ Variables Docker principales :
 | `APP_HOME_TITLE` | Titre affiche dans l'interface |
 | `JEUXVIDEO_ODS_FILE` | Fichier ODS monte dans le backend |
 | `JEUXVIDEO_BACKUP_DIR` | Repertoire hote recevant les sauvegardes ODS |
+| `BACKEND_LOG_LEVEL` | Niveau de log Python du backend |
+| `BACKEND_LOG_FILE_ENABLED` | Active l'ecriture des logs backend sur disque |
+| `BACKEND_LOG_HOST_DIR` | Repertoire hote recevant les logs backend |
+| `BACKEND_LOG_FILE_NAME` | Nom du fichier de log actif dans le conteneur |
+| `BACKEND_LOG_FILE_MAX_BYTES` | Taille maximale du fichier actif avant rotation |
+| `BACKEND_LOG_FILE_BACKUP_COUNT` | Nombre maximal d'archives de logs conservees |
+| `EMAIL_DELIVERY_MODE` | Mode email, `console` en local ou `smtp` en production |
+| `SMTP_FROM_EMAIL` | Adresse expediteur des emails transactionnels |
+| `SMTP_HOST` | Serveur SMTP du fournisseur transactionnel |
+| `SMTP_PORT` | Port SMTP |
+| `SMTP_USERNAME` | Identifiant SMTP du fournisseur transactionnel |
+| `SMTP_PASSWORD` | Mot de passe ou cle SMTP du fournisseur transactionnel |
+| `SMTP_USE_TLS` | Active STARTTLS pour l'envoi SMTP |
 | `AUTH_USERNAME` | Identifiant autorise pour les actions protegees |
 | `AUTH_ENV_ENCRYPTION_KEY` | Cle Fernet pour dechiffrer les secrets applicatifs |
 | `AUTH_PASSWORD_ENCRYPTED` | Mot de passe applicatif chiffre |
 | `AUTH_SECRET_KEY_ENCRYPTED` | Secret de signature des tokens chiffre |
 | `AUTH_TOKEN_TTL_SECONDS` | Duree de validite des tokens Bearer |
+| `APP_VERSION` | Version applicative inscrite dans `t_schema_version` |
+| `DB_SCHEMA_NAME` | Schema PostgreSQL cree et migre au demarrage du backend |
 | `POSTGRES_DB` | Nom de la base PostgreSQL |
 | `POSTGRES_USER` | Utilisateur PostgreSQL |
 | `POSTGRES_PASSWORD` | Mot de passe PostgreSQL utilise par Docker |
@@ -321,6 +398,21 @@ Adapter ensuite `docker/.env` si besoin :
 WEB_PORT=8080
 JEUXVIDEO_ODS_FILE=../collection.ods
 JEUXVIDEO_BACKUP_DIR=../backup
+BACKEND_LOG_LEVEL=INFO
+BACKEND_LOG_FILE_ENABLED=true
+BACKEND_LOG_HOST_DIR=../logs
+BACKEND_LOG_FILE_NAME=backend.log
+BACKEND_LOG_FILE_MAX_BYTES=10485760
+BACKEND_LOG_FILE_BACKUP_COUNT=30
+EMAIL_DELIVERY_MODE=smtp
+SMTP_FROM_EMAIL=noreply@cloud-collection-app.fr
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USERNAME=remplacer-par-identifiant-smtp
+SMTP_PASSWORD=remplacer-par-mot-de-passe-smtp
+SMTP_USE_TLS=true
+APP_VERSION=0.1
+DB_SCHEMA_NAME=cloudcollectionapp
 POSTGRES_DB=cloudcollectionapp
 POSTGRES_USER=cloudcollectionapp
 POSTGRES_PASSWORD=changer-ce-mot-de-passe
@@ -537,13 +629,14 @@ Voir aussi `documentation/ci.md`.
 - Les dossiers `node_modules/`, `dist/`, `.venv/` et les caches Python sont ignores par Git.
 - L'ajout de jeu modifie le fichier ODS sur disque : verifier la sauvegarde si une modification doit etre annulee.
 - Les sauvegardes ODS sont creees avant les ajouts, modifications et suppressions.
-- Si la structure du fichier ODS change fortement, il faudra adapter les services `backend/services/ods/` et `JeuVideoService`.
+- Si la structure du fichier ODS change fortement, il faudra adapter les services `backend/services/ods/` et `GamesService`.
 
 ## Documentation Fonctionnelle
 
 Les documents fonctionnels a maintenir sont dans `documentation/` :
 
 - `documentation/authentication.md` : authentification, routes protegees et session frontend
+- `documentation/register.md` : inscription utilisateur et validation email
 - `documentation/site-plan.md` : redirection des pages sans session
 - `documentation/about.md` : page About publique
 - `documentation/menu.md` : menu principal
