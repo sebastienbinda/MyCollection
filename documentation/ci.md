@@ -3,7 +3,10 @@
 ## Key Points
 
 - Continuous integration is handled by GitHub Actions.
-- The workflow file is `.github/workflows/ci.yml`.
+- CI and PR validation workflow files are `.github/workflows/ci.yml` and
+  `.github/workflows/validate-pr.yml`.
+- Pull requests are validated for Conventional Commits title format and release
+  note labels.
 - Backend tests run only when backend-related files change, when the workflow
   file changes, and on every pushed Git tag.
 - The frontend production build runs only when frontend-related files change,
@@ -18,9 +21,9 @@ The CI pipeline validates the main branch and tagged releases. Docker images are
 published only for release tags, and the release version is explicit: it is the
 pushed Git tag in `X.Y.Z` format.
 
-## Workflow
+## Push And Release Workflow
 
-The GitHub Actions workflow contains four jobs:
+The `.github/workflows/ci.yml` workflow contains four jobs:
 
 - `change-detection`: detects whether backend or frontend validation is needed
   from the files changed by the push.
@@ -47,6 +50,29 @@ already defined, `./test_backend.sh` points it to the versioned
 The workflow uses GitHub and Docker actions that target the Node.js 24 runtime.
 This is independent from the frontend application build, which uses the Node.js
 version configured in `actions/setup-node`.
+
+## Pull Request Workflow
+
+The `.github/workflows/validate-pr.yml` workflow runs on pull requests and
+validates PR metadata before merge.
+
+The PR title must follow Conventional Commits format, for example:
+
+```text
+feat(database): add user registration
+```
+
+The PR must also have at least one release-note label:
+
+- `enhancement`
+- `bug`
+- `documentation`
+- `dependencies`
+- `breaking-change`
+- `ignore-for-release`
+
+Configure branch protection on `main` so this workflow is a required status
+check before merging.
 
 ## Docker Version
 
@@ -98,5 +124,6 @@ The workflow requires:
   the source of truth for published Docker images.
 - Do not hardcode registry credentials in the repository. Use GitHub Actions
   token permissions or repository secrets.
+- Keep PR metadata validation aligned with GitHub release note labels.
 - If image names, registry location, trigger branches, or versioning behavior
   change, update this document in the same change set.

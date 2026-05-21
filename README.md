@@ -483,6 +483,7 @@ Le projet contient un pipeline GitHub Actions dans :
 
 ```text
 .github/workflows/ci.yml
+.github/workflows/validate-pr.yml
 ```
 
 Il execute les validations sur chaque `push` vers `main` et sur chaque tag Git,
@@ -494,6 +495,10 @@ avec detection des zones modifiees pour eviter les validations inutiles :
   `docker/frontend.Dockerfile` ou `.github/workflows/ci.yml` change
 - le build et la publication des images Docker backend et frontend uniquement
   pour les tags `X.Y.Z`
+
+Le workflow `validate-pr.yml` controle les pull requests : le titre doit suivre
+le format Conventional Commits et la PR doit porter un label compatible avec les
+release notes GitHub.
 
 Sur un tag Git, les validations backend et frontend sont toujours executees
 avant la publication Docker.
