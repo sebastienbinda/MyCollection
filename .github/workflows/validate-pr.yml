@@ -1,0 +1,67 @@
+name: Validate PR
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+      - labeled
+      - unlabeled
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: validate-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-pr:
+    name: Validate PR metadata
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR title
+        shell: bash
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+
+          title="${PR_TITLE}"
+          pattern='^(feat|fix|docs|ci|refactor|test|chore|perf|build)(\([a-zA-Z0-9._/-]+\))?!?: .+'
+
+          if [[ ! "${title}" =~ ${pattern} ]]; then
+            echo "PR title must follow Conventional Commits."
+            echo "Expected example: feat(database): add user registration"
+            exit 1
+          fi
+
+      - name: Validate release note label
+        shell: bash
+        env:
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          set -euo pipefail
+
+          labels=",${PR_LABELS},"
+          allowed_labels=(
+            "enhancement"
+            "bug"
+            "documentation"
+            "dependencies"
+            "breaking-change"
+            "ignore-for-release"
+          )
+
+          for label in "${allowed_labels[@]}"; do
+            if [[ "${labels}" == *",${label},"* ]]; then
+              exit 0
+            fi
+          done
+
+          echo "PR must have one release-note label:"
+          printf ' - %s\n' "${allowed_labels[@]}"
+          exit 1
